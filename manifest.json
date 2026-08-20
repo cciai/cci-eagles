@@ -1,0 +1,9 @@
+{
+  "name": "EAGLES - CCI Site Tasks",
+  "short_name": "EAGLES",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#151815",
+  "theme_color": "#151815",
+  "orientation": "portrait"
+}

@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>EAGLES · CCI</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1B1F1C">
+<style>
+  :root{
+    --bg-app:#0F1620;
+    --bg-card:#182231;
+    --bg-card-2:#1F2C3E;
+    --bg-raised:#28394E;
+    --accent:#3E8EDE;
+    --accent-dark:#1D5A9C;
+    --accent-text:#F4F9FF;
+    --success:#5FB65C;
+    --success-dark:#2E5B2C;
+    --danger:#E2574C;
+    --danger-dark:#7A2A24;
+    --text-primary:#F0F4F9;
+    --text-secondary:#93A2B5;
+    --text-muted:#647184;
+    --border:#293850;
+    --radius:14px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;height:100%;background:var(--bg-app);color:var(--text-primary);overscroll-behavior:none;}
+  #app{max-width:520px;margin:0 auto;height:100vh;display:flex;flex-direction:column;position:relative;background:var(--bg-app);}
+
+  /* ---------- Top brand bar ---------- */
+  .brandbar{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0;}
+  .brandbar .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(160deg,var(--accent),var(--accent-dark));display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--accent-text);font-size:15px;letter-spacing:-0.5px;}
+  .brandbar .title{font-size:17px;font-weight:600;letter-spacing:0.5px;}
+  .brandbar .sub{font-size:11px;color:var(--text-muted);margin-top:1px;}
+
+  /* ---------- Screens ---------- */
+  .screen{flex:1;overflow-y:auto;display:none;}
+  .screen.active{display:flex;flex-direction:column;}
+
+  /* ---------- Login ---------- */
+  #screen-login{align-items:center;justify-content:center;padding:32px;text-align:center;}
+  #screen-login .eagle-mark{width:64px;height:64px;border-radius:18px;background:linear-gradient(160deg,var(--accent),var(--accent-dark));display:flex;align-items:center;justify-content:center;margin-bottom:18px;font-size:28px;}
+  #screen-login h1{font-size:22px;font-weight:600;margin:0 0 4px;letter-spacing:0.5px;}
+  #screen-login p.tagline{color:var(--text-secondary);font-size:13px;margin:0 0 28px;}
+  .field{width:100%;max-width:320px;margin-bottom:12px;text-align:left;}
+  .field label{font-size:12px;color:var(--text-secondary);display:block;margin-bottom:6px;}
+  .field input{width:100%;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:13px 14px;color:var(--text-primary);font-size:16px;outline:none;}
+  .field input:focus{border-color:var(--accent);}
+  .btn{width:100%;max-width:320px;background:var(--accent);color:var(--accent-text);border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:600;cursor:pointer;letter-spacing:0.2px;}
+  .btn:disabled{opacity:0.5;}
+  .btn.secondary{background:transparent;border:1px solid var(--border);color:var(--text-primary);margin-top:8px;}
+  .btn.small{width:auto;padding:8px 14px;font-size:13px;}
+  #login-status{font-size:12px;color:var(--text-muted);margin-top:10px;min-height:16px;}
+
+  /* ---------- Chat list ---------- */
+  .list-row{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--border);cursor:pointer;}
+  .list-row:active{background:var(--bg-card);}
+  .avatar{width:44px;height:44px;border-radius:12px;background:var(--bg-raised);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:15px;color:var(--accent);flex-shrink:0;}
+  .avatar.group{background:linear-gradient(160deg,#3A4B3E,#232B24);color:var(--success);}
+  .row-main{flex:1;min-width:0;}
+  .row-main .name{font-size:15px;font-weight:600;display:flex;justify-content:space-between;gap:8px;}
+  .row-main .name .time{font-size:11px;font-weight:400;color:var(--text-muted);}
+  .row-main .preview{font-size:13px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;}
+  .badge{background:var(--accent);color:var(--accent-text);font-size:11px;font-weight:700;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 5px;}
+  .empty-state{padding:60px 24px;text-align:center;color:var(--text-muted);font-size:13px;}
+  .empty-state .big{font-size:32px;margin-bottom:10px;}
+
+  /* ---------- Thread ---------- */
+  .thread-header{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border);flex-shrink:0;}
+  .thread-header .back{font-size:20px;color:var(--text-secondary);cursor:pointer;padding:4px;}
+  .thread-header .info .gname{font-size:15px;font-weight:600;}
+  .thread-header .info .gmeta{font-size:11px;color:var(--text-muted);}
+  .messages{flex:1;overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column;gap:10px;}
+  .msg{max-width:82%;}
+  .msg.mine{align-self:flex-end;}
+  .msg .bubble{background:var(--bg-card);border-radius:14px;padding:10px 13px;font-size:14px;line-height:1.45;}
+  .msg.mine .bubble{background:var(--bg-raised);}
+  .msg .sender{font-size:11px;color:var(--accent);font-weight:600;margin-bottom:3px;}
+  .msg .time{font-size:10px;color:var(--text-muted);margin-top:4px;text-align:right;}
+  .msg.system .bubble{background:transparent;color:var(--text-muted);font-size:12px;text-align:center;padding:4px;}
+
+  /* task card inside chat */
+  .task-card{background:var(--bg-card-2);border:1px solid var(--border);border-radius:14px;padding:12px 14px;cursor:pointer;}
+  .task-card .tc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+  .task-card .tc-title{font-size:14px;font-weight:600;}
+  .task-card .tc-tag{font-size:10px;background:var(--accent);color:var(--accent-text);border-radius:6px;padding:2px 7px;font-weight:700;letter-spacing:0.3px;flex-shrink:0;}
+  .task-card .tc-tag.group{background:var(--success);color:#0F2A0E;}
+  .task-card .tc-desc{font-size:12px;color:var(--text-secondary);margin-top:4px;}
+  .task-card .tc-due{font-size:11px;color:var(--text-muted);margin-top:8px;}
+  .gauge{margin-top:10px;height:8px;border-radius:5px;background:var(--bg-raised);position:relative;overflow:hidden;}
+  .gauge-fill{height:100%;background:linear-gradient(90deg,var(--accent-dark),var(--accent));border-radius:5px;}
+  .gauge-fill.done{background:linear-gradient(90deg,var(--success-dark),var(--success));}
+  .gauge-label{font-size:11px;color:var(--text-secondary);margin-top:5px;display:flex;justify-content:space-between;}
+  .status-pill{font-size:10px;font-weight:700;padding:2px 8px;border-radius:6px;letter-spacing:0.3px;}
+  .status-pill.overdue{background:var(--danger-dark);color:#FFD9D5;}
+  .status-pill.completed{background:var(--success-dark);color:#D6F2D4;}
+  .status-pill.assigned,.status-pill.in_progress{background:var(--bg-raised);color:var(--text-secondary);}
+
+  .composer{display:flex;align-items:flex-end;gap:8px;padding:10px 12px;border-top:1px solid var(--border);flex-shrink:0;}
+  .composer textarea{flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:18px;padding:10px 14px;color:var(--text-primary);font-size:14px;resize:none;max-height:90px;outline:none;font-family:inherit;}
+  .icon-btn{width:38px;height:38px;border-radius:50%;background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-size:16px;}
+  .icon-btn.send{background:var(--accent);color:var(--accent-text);border:none;}
+  .icon-btn.task{background:var(--bg-raised);color:var(--accent);}
+
+  /* ---------- Slide-up panels (inline, not modal) ---------- */
+  .sheet-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.5);display:none;z-index:10;}
+  .sheet-backdrop.open{display:block;}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg-card);border-radius:20px 20px 0 0;z-index:11;transform:translateY(100%);transition:transform 0.25s ease;max-height:88%;display:flex;flex-direction:column;}
+  .sheet.open{transform:translateY(0);}
+  .sheet-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:10px auto 4px;}
+  .sheet-title{font-size:16px;font-weight:600;padding:8px 18px 14px;border-bottom:1px solid var(--border);}
+  .sheet-body{padding:16px 18px;overflow-y:auto;}
+  .sheet-body .field{max-width:none;}
+  .sheet-body select{width:100%;background:var(--bg-card-2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text-primary);font-size:14px;}
+  .chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
+  .chip{border:1px solid var(--border);border-radius:20px;padding:7px 13px;font-size:13px;color:var(--text-secondary);cursor:pointer;}
+  .chip.selected{background:var(--accent);border-color:var(--accent);color:var(--accent-text);font-weight:600;}
+  .segmented{display:flex;background:var(--bg-card-2);border-radius:10px;padding:3px;gap:3px;}
+  .segmented .seg{flex:1;text-align:center;padding:9px;border-radius:8px;font-size:13px;color:var(--text-secondary);cursor:pointer;}
+  .segmented .seg.active{background:var(--bg-raised);color:var(--accent);font-weight:600;}
+  .slider-wrap{margin:18px 0 6px;}
+  .slider-wrap input[type=range]{width:100%;accent-color:var(--accent);}
+  .slider-val{text-align:center;font-size:32px;font-weight:700;color:var(--accent);margin-bottom:4px;}
+
+  /* ---------- Bottom nav ---------- */
+  .bottomnav{display:flex;border-top:1px solid var(--border);flex-shrink:0;background:var(--bg-app);}
+  .navbtn{flex:1;text-align:center;padding:9px 0 8px;font-size:11px;color:var(--text-muted);cursor:pointer;}
+  .navbtn .ic{font-size:19px;display:block;margin-bottom:2px;}
+  .navbtn.active{color:var(--accent);}
+
+  /* ---------- Dashboard ---------- */
+  .dash-section{padding:14px 16px 4px;font-size:12px;color:var(--text-muted);letter-spacing:0.5px;text-transform:uppercase;}
+  .stat-row{display:flex;gap:10px;padding:0 16px 14px;}
+  .stat-box{flex:1;background:var(--bg-card);border-radius:12px;padding:12px;}
+  .stat-box .n{font-size:22px;font-weight:700;}
+  .stat-box .l{font-size:11px;color:var(--text-secondary);margin-top:2px;}
+  .stat-box.overdue .n{color:var(--danger);}
+  .filter-row{display:flex;gap:8px;padding:0 16px 12px;overflow-x:auto;}
+
+  ::-webkit-scrollbar{width:0;height:0;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- LOGIN -->
+  <div class="screen active" id="screen-login">
+    <div class="eagle-mark">🦅</div>
+    <h1>EAGLES</h1>
+    <p class="tagline">CCI site tasks &amp; team chat</p>
+
+    <div id="login-step-phone">
+      <div class="field">
+        <label>Mobile number</label>
+        <input type="tel" id="input-phone" placeholder="98765 43210" maxlength="10">
+      </div>
+      <div class="field">
+        <label>PIN (6 digits)</label>
+        <input type="password" inputmode="numeric" id="input-pin" placeholder="••••••" maxlength="6">
+      </div>
+      <p style="font-size:11px;color:var(--text-muted);margin:-4px 0 14px;max-width:320px;">First time? This creates your PIN. Returning? Enter the same PIN to continue.</p>
+      <button class="btn" id="btn-login-pin">Continue</button>
+    </div>
+
+    <div id="login-status"></div>
+  </div>
+
+  <!-- CHATS LIST -->
+  <div class="screen" id="screen-chats">
+    <div class="brandbar">
+      <div class="logo">🦅</div>
+      <div>
+        <div class="title">EAGLES</div>
+        <div class="sub" id="header-user-name">—</div>
+      </div>
+    </div>
+    <div id="chats-list" style="flex:1;overflow-y:auto;"></div>
+  </div>
+
+  <!-- THREAD -->
+  <div class="screen" id="screen-thread">
+    <div class="thread-header">
+      <div class="back" id="btn-back-to-chats">‹</div>
+      <div class="info">
+        <div class="gname" id="thread-name">—</div>
+        <div class="gmeta" id="thread-meta">—</div>
+      </div>
+    </div>
+    <div class="messages" id="messages-list"></div>
+    <div class="composer">
+      <div class="icon-btn task" id="btn-open-task-sheet" style="display:none;">＋T</div>
+      <textarea id="input-message" rows="1" placeholder="Message"></textarea>
+      <div class="icon-btn send" id="btn-send-message">➤</div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD (issuer only) -->
+  <div class="screen" id="screen-dashboard">
+    <div class="brandbar"><div class="logo">🦅</div><div><div class="title">Dashboard</div><div class="sub">All site tasks</div></div></div>
+    <div class="stat-row">
+      <div class="stat-box"><div class="n" id="stat-active">0</div><div class="l">Active</div></div>
+      <div class="stat-box overdue"><div class="n" id="stat-overdue">0</div><div class="l">Overdue</div></div>
+      <div class="stat-box"><div class="n" id="stat-done">0</div><div class="l">Completed today</div></div>
+    </div>
+    <div class="filter-row" id="dash-filters">
+      <div class="chip selected" data-filter="all">All</div>
+      <div class="chip" data-filter="overdue">Overdue</div>
+      <div class="chip" data-filter="in_progress">In progress</div>
+      <div class="chip" data-filter="completed">Completed</div>
+    </div>
+    <div id="dash-list" style="flex:1;overflow-y:auto;"></div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottomnav" id="bottomnav" style="display:none;">
+    <div class="navbtn active" data-nav="chats"><span class="ic">💬</span>Chats</div>
+    <div class="navbtn" data-nav="dashboard" id="nav-dashboard"><span class="ic">📊</span>Dashboard</div>
+  </div>
+
+  <!-- SHEET: create task -->
+  <div class="sheet-backdrop" id="task-sheet-backdrop"></div>
+  <div class="sheet" id="task-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Assign task</div>
+    <div class="sheet-body">
+      <div class="field"><label>Title</label><input type="text" id="task-title" placeholder="e.g. Shutter Block A - column C4"></div>
+      <div class="field"><label>Description (optional)</label><input type="text" id="task-desc" placeholder="Details, spec, location"></div>
+      <div class="field">
+        <label>Assign to</label>
+        <div class="segmented">
+          <div class="seg active" data-tasktype="individual">One person</div>
+          <div class="seg" data-tasktype="group">Whole group</div>
+        </div>
+      </div>
+      <div class="field" id="assignee-field">
+        <label>Member</label>
+        <select id="task-assignee"></select>
+      </div>
+      <div class="field"><label>Target quantity (optional)</label><input type="text" id="task-target" placeholder="e.g. 40 sqm"></div>
+      <div class="field"><label>Due date</label><input type="date" id="task-due"></div>
+      <button class="btn" id="btn-create-task">Assign task</button>
+    </div>
+  </div>
+
+  <!-- SHEET: update progress -->
+  <div class="sheet-backdrop" id="progress-sheet-backdrop"></div>
+  <div class="sheet" id="progress-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="progress-sheet-title">Update progress</div>
+    <div class="sheet-body">
+      <div class="slider-wrap">
+        <div class="slider-val" id="progress-val">0%</div>
+        <input type="range" id="progress-slider" min="0" max="100" value="0" step="5">
+      </div>
+      <div class="field"><label>Note (optional)</label><input type="text" id="progress-note" placeholder="Any update or blocker"></div>
+      <button class="btn" id="btn-submit-progress">Save update</button>
+    </div>
+  </div>
+
+</div>
+
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const SUPABASE_URL = 'https://cnvxmpnudgjwdoccvqbk.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_BiUGP07QC3_JKITcHSqqDg_gDq3lrUQ';
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let session = null;
+let me = null; // ea_users row
+let conversations = [];
+let activeConversation = null;
+let members = []; // members of active conversation
+let taskSheetType = 'individual';
+let activeTaskForProgress = null;
+
+const $ = (id) => document.getElementById(id);
+const show = (id) => { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); $(id).classList.add('active'); };
+
+/* ---------------- AUTH (phone + PIN, via internal synthetic email) ---------------- */
+function phoneToInternalEmail(phone){ return phone + '@eagles.cci.local'; }
+
+$('btn-login-pin').onclick = async () => {
+  const phone = $('input-phone').value.trim();
+  const pin = $('input-pin').value.trim();
+  if (phone.length < 10) { $('login-status').textContent = 'Enter a valid 10-digit number'; return; }
+  if (pin.length !== 6) { $('login-status').textContent = 'PIN must be exactly 6 digits'; return; }
+  $('login-status').textContent = 'Checking…';
+  const email = phoneToInternalEmail(phone);
+
+  let { data, error } = await sb.auth.signInWithPassword({ email, password: pin });
+  if (error) {
+    // no existing account with this phone -> treat as first-time signup
+    const su = await sb.auth.signUp({ email, password: pin });
+    if (su.error) { $('login-status').textContent = su.error.message; return; }
+    data = su.data;
+  }
+  session = data.session;
+  await loadMe(phone);
+};
+
+async function loadMe(phoneEntered){
+  const { data:{ user } } = await sb.auth.getUser();
+  let { data: profile } = await sb.from('ea_users').select('*').eq('id', user.id).single();
+  if (!profile) {
+    // first login - create profile as staff by default; promote owner/pm manually via SQL
+    const { data: created } = await sb.from('ea_users').insert({
+      id: user.id, name: 'New user', phone: phoneEntered || user.phone, role: 'staff'
+    }).select().single();
+    profile = created;
+  }
+  me = profile;
+  $('header-user-name').textContent = me.name + ' · ' + me.role;
+  if (me.role === 'owner' || me.role === 'pm') {
+    $('bottomnav').style.display = 'flex';
+    $('btn-open-task-sheet').style.display = 'flex';
+  }
+  $('bottomnav').style.display = 'flex';
+  show('screen-chats');
+  await loadConversations();
+}
+
+/* ---------------- CONVERSATIONS ---------------- */
+async function loadConversations(){
+  const { data: memRows } = await sb.from('ea_conversation_members').select('conversation_id').eq('user_id', me.id);
+  const ids = (memRows||[]).map(r=>r.conversation_id);
+  if (ids.length === 0) { renderChatsEmpty(); return; }
+  const { data: convs } = await sb.from('ea_conversations').select('*').in('id', ids).order('created_at', {ascending:false});
+  conversations = convs || [];
+  renderChatsList();
+}
+
+function renderChatsEmpty(){
+  $('chats-list').innerHTML = `<div class="empty-state"><div class="big">🦅</div>No site groups yet.<br>Ask your PM to add you to one.</div>`;
+}
+
+function renderChatsList(){
+  if (conversations.length === 0) { renderChatsEmpty(); return; }
+  $('chats-list').innerHTML = conversations.map(c => `
+    <div class="list-row" data-conv="${c.id}">
+      <div class="avatar ${c.kind==='site_group'?'group':''}">${(c.name||'DM').slice(0,2).toUpperCase()}</div>
+      <div class="row-main">
+        <div class="name"><span>${c.name||'Direct message'}</span><span class="time"></span></div>
+        <div class="preview">${c.site||''}</div>
+      </div>
+    </div>`).join('');
+  document.querySelectorAll('[data-conv]').forEach(el=>{
+    el.onclick = () => openThread(el.getAttribute('data-conv'));
+  });
+}
+
+/* ---------------- THREAD ---------------- */
+async function openThread(convId){
+  activeConversation = conversations.find(c=>c.id===convId);
+  $('thread-name').textContent = activeConversation.name || 'Direct message';
+  $('thread-meta').textContent = activeConversation.site || '';
+  show('screen-thread');
+  await loadMembers(convId);
+  await loadMessages(convId);
+  subscribeMessages(convId);
+}
+
+$('btn-back-to-chats').onclick = () => { show('screen-chats'); };
+
+async function loadMembers(convId){
+  const { data } = await sb.from('ea_conversation_members').select('user_id, ea_users(name)').eq('conversation_id', convId);
+  members = data || [];
+  const sel = $('task-assignee');
+  sel.innerHTML = members.map(m=>`<option value="${m.user_id}">${m.ea_users?.name || 'Member'}</option>`).join('');
+}
+
+async function loadMessages(convId){
+  const { data } = await sb.from('ea_messages').select('*, ea_users(name)').eq('conversation_id', convId).order('created_at');
+  $('messages-list').innerHTML = '';
+  (data||[]).forEach(renderMessage);
+  scrollMessagesToBottom();
+}
+
+let msgChannel = null;
+function subscribeMessages(convId){
+  if (msgChannel) sb.removeChannel(msgChannel);
+  msgChannel = sb.channel('room-'+convId)
+    .on('postgres_changes', { event:'INSERT', schema:'public', table:'ea_messages', filter:`conversation_id=eq.${convId}` }, payload => {
+      renderMessage(payload.new);
+      scrollMessagesToBottom();
+    }).subscribe();
+}
+
+function scrollMessagesToBottom(){
+  const el = $('messages-list'); el.scrollTop = el.scrollHeight;
+}
+
+async function renderMessage(m){
+  const wrap = document.createElement('div');
+  if (m.msg_type === 'task_card') {
+    const { data: task } = await sb.from('ea_tasks').select('*, ea_task_assignees(*)').eq('id', m.task_id).single();
+    wrap.className = 'msg';
+    wrap.innerHTML = taskCardHTML(task);
+    wrap.querySelector('.task-card').onclick = () => openProgressSheet(task);
+  } else if (m.msg_type === 'system') {
+    wrap.className = 'msg system';
+    wrap.innerHTML = `<div class="bubble">${m.content}</div>`;
+  } else {
+    wrap.className = 'msg' + (m.sender_id===me.id ? ' mine':'');
+    wrap.innerHTML = `${m.sender_id!==me.id?`<div class="sender">${m.ea_users?.name||''}</div>`:''}<div class="bubble">${m.content||''}</div><div class="time">${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>`;
+  }
+  $('messages-list').appendChild(wrap);
+}
+
+function taskCardHTML(task){
+  const mine = (task.ea_task_assignees||[]).find(a=>a.user_id===me.id);
+  const pct = mine ? mine.progress_pct : Math.round((task.ea_task_assignees||[]).reduce((s,a)=>s+a.progress_pct,0)/((task.ea_task_assignees||[]).length||1));
+  const status = mine ? mine.status : 'assigned';
+  return `<div class="task-card">
+    <div class="tc-top">
+      <div class="tc-title">${task.title}</div>
+      <div class="tc-tag ${task.task_type}">${task.task_type==='group'?'GROUP':'TASK'}</div>
+    </div>
+    ${task.description?`<div class="tc-desc">${task.description}</div>`:''}
+    <div class="gauge"><div class="gauge-fill ${pct>=100?'done':''}" style="width:${pct}%"></div></div>
+    <div class="gauge-label"><span>${pct}% complete</span><span class="status-pill ${status}">${status.replace('_',' ')}</span></div>
+    ${task.due_date?`<div class="tc-due">Due ${task.due_date}${task.target_qty?' · Target '+task.target_qty+' '+(task.target_unit||''):''}</div>`:''}
+  </div>`;
+}
+
+/* ---------------- SEND MESSAGE ---------------- */
+$('btn-send-message').onclick = async () => {
+  const text = $('input-message').value.trim();
+  if (!text || !activeConversation) return;
+  $('input-message').value = '';
+  await sb.from('ea_messages').insert({ conversation_id: activeConversation.id, sender_id: me.id, msg_type:'text', content: text });
+};
+
+/* ---------------- TASK SHEET ---------------- */
+$('btn-open-task-sheet').onclick = () => toggleSheet('task-sheet', true);
+$('task-sheet-backdrop').onclick = () => toggleSheet('task-sheet', false);
+$('progress-sheet-backdrop').onclick = () => toggleSheet('progress-sheet', false);
+
+function toggleSheet(id, open){
+  $(id).classList.toggle('open', open);
+  $(id+'-backdrop').classList.toggle('open', open);
+}
+
+document.querySelectorAll('[data-tasktype]').forEach(el=>{
+  el.onclick = () => {
+    document.querySelectorAll('[data-tasktype]').forEach(x=>x.classList.remove('active'));
+    el.classList.add('active');
+    taskSheetType = el.getAttribute('data-tasktype');
+    $('assignee-field').style.display = taskSheetType==='group' ? 'none' : 'block';
+  };
+});
+
+$('btn-create-task').onclick = async () => {
+  const title = $('task-title').value.trim();
+  if (!title || !activeConversation) return;
+  const { data: task } = await sb.from('ea_tasks').insert({
+    conversation_id: activeConversation.id,
+    title,
+    description: $('task-desc').value.trim() || null,
+    task_type: taskSheetType,
+    target_qty: $('task-target').value.trim() || null,
+    due_date: $('task-due').value || null,
+    created_by: me.id
+  }).select().single();
+
+  const assignees = taskSheetType === 'group'
+    ? members.map(m=>m.user_id)
+    : [$('task-assignee').value];
+
+  await sb.from('ea_task_assignees').insert(assignees.map(uid=>({ task_id: task.id, user_id: uid })));
+  await sb.from('ea_messages').insert({ conversation_id: activeConversation.id, sender_id: me.id, msg_type:'task_card', task_id: task.id });
+
+  $('task-title').value=''; $('task-desc').value=''; $('task-target').value=''; $('task-due').value='';
+  toggleSheet('task-sheet', false);
+};
+
+/* ---------------- PROGRESS SHEET ---------------- */
+function openProgressSheet(task){
+  activeTaskForProgress = task;
+  const mine = (task.ea_task_assignees||[]).find(a=>a.user_id===me.id);
+  const pct = mine ? mine.progress_pct : 0;
+  $('progress-sheet-title').textContent = task.title;
+  $('progress-slider').value = pct;
+  $('progress-val').textContent = pct + '%';
+  toggleSheet('progress-sheet', true);
+}
+
+$('progress-slider').oninput = (e) => { $('progress-val').textContent = e.target.value + '%'; };
+
+$('btn-submit-progress').onclick = async () => {
+  const pct = parseInt($('progress-slider').value, 10);
+  const note = $('progress-note').value.trim();
+  const status = pct >= 100 ? 'completed' : (pct > 0 ? 'in_progress' : 'assigned');
+  await sb.from('ea_task_assignees').update({ progress_pct: pct, status, updated_at: new Date().toISOString(), completed_at: pct>=100?new Date().toISOString():null })
+    .eq('task_id', activeTaskForProgress.id).eq('user_id', me.id);
+  await sb.from('ea_task_updates').insert({ task_id: activeTaskForProgress.id, user_id: me.id, progress_pct: pct, note: note || null });
+  await sb.from('ea_messages').insert({ conversation_id: activeConversation.id, sender_id: me.id, msg_type:'system', content: `${me.name} updated "${activeTaskForProgress.title}" to ${pct}%${note?': '+note:''}` });
+  $('progress-note').value = '';
+  toggleSheet('progress-sheet', false);
+};
+
+/* ---------------- BOTTOM NAV ---------------- */
+document.querySelectorAll('[data-nav]').forEach(el=>{
+  el.onclick = () => {
+    document.querySelectorAll('.navbtn').forEach(x=>x.classList.remove('active'));
+    el.classList.add('active');
+    if (el.getAttribute('data-nav')==='chats') show('screen-chats');
+    if (el.getAttribute('data-nav')==='dashboard') { show('screen-dashboard'); loadDashboard(); }
+  };
+});
+
+async function loadDashboard(){
+  const { data } = await sb.from('ea_tasks').select('*, ea_task_assignees(*), ea_conversations(name)').eq('status','active');
+  const rows = data || [];
+  let active=0, overdue=0, done=0;
+  const today = new Date().toISOString().slice(0,10);
+  const listHtml = [];
+  rows.forEach(t=>{
+    (t.ea_task_assignees||[]).forEach(a=>{
+      active++;
+      const isOverdue = t.due_date && t.due_date < today && a.status !== 'completed';
+      if (isOverdue) overdue++;
+      if (a.status==='completed') done++;
+      listHtml.push(`<div class="list-row">
+        <div class="avatar">${(t.ea_conversations?.name||'?').slice(0,2).toUpperCase()}</div>
+        <div class="row-main">
+          <div class="name"><span>${t.title}</span><span class="status-pill ${isOverdue?'overdue':a.status}">${isOverdue?'overdue':a.status.replace('_',' ')}</span></div>
+          <div class="preview">${t.ea_conversations?.name||''} · ${a.progress_pct}%</div>
+        </div>
+      </div>`);
+    });
+  });
+  $('stat-active').textContent = active;
+  $('stat-overdue').textContent = overdue;
+  $('stat-done').textContent = done;
+  $('dash-list').innerHTML = listHtml.join('') || `<div class="empty-state">No tasks yet.</div>`;
+}
+
+/* ---------------- INIT ---------------- */
+(async function init(){
+  const { data:{ session: s } } = await sb.auth.getSession();
+  if (s) { session = s; await loadMe(); }
+})();
+</script>
+</body>
+</html>
