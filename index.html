@@ -172,10 +172,11 @@
   <div class="screen" id="screen-chats">
     <div class="brandbar">
       <div class="logo">🦅</div>
-      <div>
+      <div style="flex:1;">
         <div class="title">EAGLES</div>
         <div class="sub" id="header-user-name">—</div>
       </div>
+      <div class="icon-btn task" id="btn-open-group-sheet" style="display:none;">＋G</div>
     </div>
     <div id="chats-list" style="flex:1;overflow-y:auto;"></div>
   </div>
@@ -188,6 +189,7 @@
         <div class="gname" id="thread-name">—</div>
         <div class="gmeta" id="thread-meta">—</div>
       </div>
+      <div class="icon-btn" id="btn-manage-members" style="display:none;margin-left:auto;">👥</div>
     </div>
     <div class="messages" id="messages-list"></div>
     <div class="composer">
@@ -258,6 +260,33 @@
       <div class="field"><label>Note (optional)</label><input type="text" id="progress-note" placeholder="Any update or blocker"></div>
       <button class="btn" id="btn-submit-progress">Save update</button>
     </div>
+  <!-- SHEET: new site group -->
+  <div class="sheet-backdrop" id="group-sheet-backdrop"></div>
+  <div class="sheet" id="group-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">New site group</div>
+    <div class="sheet-body">
+      <div class="field"><label>Group name</label><input type="text" id="group-name" placeholder="e.g. Tower B - Civil Team"></div>
+      <div class="field"><label>Site (optional)</label><input type="text" id="group-site" placeholder="e.g. Anna Nagar Project"></div>
+      <div class="field">
+        <label>Add members</label>
+        <div id="group-member-list" style="display:flex;flex-direction:column;gap:8px;margin-top:6px;"></div>
+        <p style="font-size:11px;color:var(--text-muted);margin-top:8px;">Only staff who've logged into EAGLES at least once show up here. If someone's missing, ask them to log in with their phone + PIN first, then add them.</p>
+      </div>
+      <button class="btn" id="btn-create-group">Create group</button>
+    </div>
+  </div>
+
+  <!-- SHEET: add/remove members (existing group) -->
+  <div class="sheet-backdrop" id="members-sheet-backdrop"></div>
+  <div class="sheet" id="members-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Manage members</div>
+    <div class="sheet-body">
+      <div id="members-current-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+      <div style="font-size:12px;color:var(--text-muted);margin:16px 0 6px;text-transform:uppercase;letter-spacing:0.5px;">Add more</div>
+      <div id="members-add-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
   </div>
 
 </div>
@@ -303,24 +332,30 @@ $('btn-login-pin').onclick = async () => {
 };
 
 async function loadMe(phoneEntered){
-  const { data:{ user } } = await sb.auth.getUser();
-  let { data: profile } = await sb.from('ea_users').select('*').eq('id', user.id).single();
-  if (!profile) {
-    // first login - create profile as staff by default; promote owner/pm manually via SQL
-    const { data: created } = await sb.from('ea_users').insert({
-      id: user.id, name: 'New user', phone: phoneEntered || user.phone, role: 'staff'
-    }).select().single();
-    profile = created;
-  }
-  me = profile;
-  $('header-user-name').textContent = me.name + ' · ' + me.role;
-  if (me.role === 'owner' || me.role === 'pm') {
+  try {
+    const { data:{ user }, error: userErr } = await sb.auth.getUser();
+    if (userErr || !user) { $('login-status').textContent = 'Session error - please try again'; return; }
+    let { data: profile, error: profErr } = await sb.from('ea_users').select('*').eq('id', user.id).single();
+    if (!profile) {
+      // first login - create profile as staff by default; promote owner/pm manually via SQL
+      const { data: created, error: createErr } = await sb.from('ea_users').insert({
+        id: user.id, name: 'New user', phone: phoneEntered || user.phone, role: 'staff'
+      }).select().single();
+      if (createErr) { $('login-status').textContent = 'Could not create profile: ' + createErr.message; return; }
+      profile = created;
+    }
+    me = profile;
+    $('header-user-name').textContent = me.name + ' · ' + me.role;
+    if (me.role === 'owner' || me.role === 'pm') {
+      $('btn-open-task-sheet').style.display = 'flex';
+      $('btn-open-group-sheet').style.display = 'flex';
+    }
     $('bottomnav').style.display = 'flex';
-    $('btn-open-task-sheet').style.display = 'flex';
+    show('screen-chats');
+    await loadConversations();
+  } catch (e) {
+    $('login-status').textContent = 'Error: ' + (e.message || e);
   }
-  $('bottomnav').style.display = 'flex';
-  show('screen-chats');
-  await loadConversations();
 }
 
 /* ---------------- CONVERSATIONS ---------------- */
@@ -357,6 +392,7 @@ async function openThread(convId){
   activeConversation = conversations.find(c=>c.id===convId);
   $('thread-name').textContent = activeConversation.name || 'Direct message';
   $('thread-meta').textContent = activeConversation.site || '';
+  $('btn-manage-members').style.display = (me.role === 'owner' || me.role === 'pm') ? 'flex' : 'none';
   show('screen-thread');
   await loadMembers(convId);
   await loadMessages(convId);
@@ -501,6 +537,94 @@ $('btn-submit-progress').onclick = async () => {
   $('progress-note').value = '';
   toggleSheet('progress-sheet', false);
 };
+
+/* ---------------- NEW GROUP ---------------- */
+let allStaffUsers = [];
+let selectedNewMembers = new Set();
+
+$('btn-open-group-sheet').onclick = async () => {
+  const { data } = await sb.from('ea_users').select('id, name, phone, role').neq('id', me.id).order('name');
+  allStaffUsers = data || [];
+  selectedNewMembers = new Set();
+  $('group-member-list').innerHTML = allStaffUsers.length
+    ? allStaffUsers.map(u => `<div class="chip" data-uid="${u.id}">${u.name} <span style="opacity:0.6;">· ${u.phone||''}</span></div>`).join('')
+    : `<p style="font-size:12px;color:var(--text-muted);">No one has logged into EAGLES yet. Ask your team to log in first.</p>`;
+  $('group-member-list').querySelectorAll('[data-uid]').forEach(el => {
+    el.onclick = () => {
+      const uid = el.getAttribute('data-uid');
+      if (selectedNewMembers.has(uid)) { selectedNewMembers.delete(uid); el.classList.remove('selected'); }
+      else { selectedNewMembers.add(uid); el.classList.add('selected'); }
+    };
+  });
+  toggleSheet('group-sheet', true);
+};
+$('group-sheet-backdrop').onclick = () => toggleSheet('group-sheet', false);
+
+$('btn-create-group').onclick = async () => {
+  const name = $('group-name').value.trim();
+  if (!name) { return; }
+  const { data: conv, error } = await sb.from('ea_conversations').insert({
+    kind: 'site_group', name, site: $('group-site').value.trim() || null, created_by: me.id
+  }).select().single();
+  if (error) { alert('Could not create group: ' + error.message); return; }
+
+  const memberIds = [me.id, ...Array.from(selectedNewMembers)];
+  await sb.from('ea_conversation_members').insert(
+    memberIds.map(uid => ({ conversation_id: conv.id, user_id: uid, added_by: me.id }))
+  );
+  await sb.from('ea_messages').insert({
+    conversation_id: conv.id, sender_id: me.id, msg_type: 'system',
+    content: `${me.name} created the group "${name}"`
+  });
+
+  $('group-name').value = ''; $('group-site').value = '';
+  toggleSheet('group-sheet', false);
+  await loadConversations();
+  openThread(conv.id);
+};
+
+/* ---------------- MANAGE MEMBERS ---------------- */
+$('btn-manage-members').onclick = async () => {
+  await refreshMembersSheet();
+  toggleSheet('members-sheet', true);
+};
+$('members-sheet-backdrop').onclick = () => toggleSheet('members-sheet', false);
+
+async function refreshMembersSheet(){
+  const { data: current } = await sb.from('ea_conversation_members')
+    .select('user_id, ea_users(id, name, phone, role)').eq('conversation_id', activeConversation.id);
+  const currentIds = new Set((current||[]).map(m=>m.user_id));
+
+  $('members-current-list').innerHTML = (current||[]).map(m => `
+    <div class="list-row" style="padding:8px 0;border-bottom:1px solid var(--border);">
+      <div class="avatar">${(m.ea_users?.name||'?').slice(0,2).toUpperCase()}</div>
+      <div class="row-main"><div class="name">${m.ea_users?.name}</div><div class="preview">${m.ea_users?.role} · ${m.ea_users?.phone||''}</div></div>
+      ${m.user_id !== me.id ? `<div class="icon-btn" data-remove="${m.user_id}" style="width:32px;height:32px;font-size:13px;">✕</div>` : ''}
+    </div>`).join('');
+  $('members-current-list').querySelectorAll('[data-remove]').forEach(el => {
+    el.onclick = async () => {
+      await sb.from('ea_conversation_members').delete()
+        .eq('conversation_id', activeConversation.id).eq('user_id', el.getAttribute('data-remove'));
+      await refreshMembersSheet();
+      await loadMembers(activeConversation.id);
+    };
+  });
+
+  const { data: allUsers } = await sb.from('ea_users').select('id, name, phone, role').order('name');
+  const addable = (allUsers||[]).filter(u => !currentIds.has(u.id));
+  $('members-add-list').innerHTML = addable.length
+    ? addable.map(u => `<div class="chip" data-add="${u.id}">＋ ${u.name} <span style="opacity:0.6;">· ${u.phone||''}</span></div>`).join('')
+    : `<p style="font-size:12px;color:var(--text-muted);">Everyone who's logged in is already a member.</p>`;
+  $('members-add-list').querySelectorAll('[data-add]').forEach(el => {
+    el.onclick = async () => {
+      await sb.from('ea_conversation_members').insert({
+        conversation_id: activeConversation.id, user_id: el.getAttribute('data-add'), added_by: me.id
+      });
+      await refreshMembersSheet();
+      await loadMembers(activeConversation.id);
+    };
+  });
+}
 
 /* ---------------- BOTTOM NAV ---------------- */
 document.querySelectorAll('[data-nav]').forEach(el=>{
