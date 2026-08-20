@@ -27,8 +27,8 @@
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-  html,body{margin:0;padding:0;height:100%;background:var(--bg-app);color:var(--text-primary);overscroll-behavior:none;}
-  #app{max-width:520px;margin:0 auto;height:100vh;display:flex;flex-direction:column;position:relative;background:var(--bg-app);}
+  html,body{margin:0;padding:0;height:100%;background:var(--bg-app);color:var(--text-primary);overscroll-behavior:none;overflow:hidden;-webkit-font-smoothing:antialiased;}
+  #app{max-width:520px;margin:0 auto;height:100vh;height:100dvh;display:flex;flex-direction:column;position:relative;background:var(--bg-app);overflow:hidden;}
 
   /* ---------- Top brand bar ---------- */
   .brandbar{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border);flex-shrink:0;}
@@ -37,8 +37,9 @@
   .brandbar .sub{font-size:11px;color:var(--text-muted);margin-top:1px;}
 
   /* ---------- Screens ---------- */
-  .screen{flex:1;overflow-y:auto;display:none;}
-  .screen.active{display:flex;flex-direction:column;}
+  .screen{flex:1;overflow-y:auto;display:none;-webkit-overflow-scrolling:touch;}
+  .screen.active{display:flex;flex-direction:column;animation:fadeIn 0.18s ease;}
+  @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
 
   /* ---------- Login ---------- */
   #screen-login{align-items:center;justify-content:center;padding:32px;text-align:center;}
@@ -47,17 +48,18 @@
   #screen-login p.tagline{color:var(--text-secondary);font-size:13px;margin:0 0 28px;}
   .field{width:100%;max-width:320px;margin-bottom:12px;text-align:left;}
   .field label{font-size:12px;color:var(--text-secondary);display:block;margin-bottom:6px;}
-  .field input{width:100%;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:13px 14px;color:var(--text-primary);font-size:16px;outline:none;}
-  .field input:focus{border-color:var(--accent);}
-  .btn{width:100%;max-width:320px;background:var(--accent);color:var(--accent-text);border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:600;cursor:pointer;letter-spacing:0.2px;}
-  .btn:disabled{opacity:0.5;}
-  .btn.secondary{background:transparent;border:1px solid var(--border);color:var(--text-primary);margin-top:8px;}
+  .field input{width:100%;background:var(--bg-card-2);border:1px solid var(--border);border-radius:11px;padding:13px 14px;color:var(--text-primary);font-size:16px;outline:none;transition:border-color 0.15s ease;}
+  .field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(62,142,222,0.15);}
+  .btn{width:100%;max-width:320px;background:var(--accent);color:var(--accent-text);border:none;border-radius:11px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;letter-spacing:0.2px;box-shadow:0 4px 14px rgba(62,142,222,0.25);transition:transform 0.1s ease, box-shadow 0.15s ease;}
+  .btn:active{transform:scale(0.98);box-shadow:0 2px 8px rgba(62,142,222,0.2);}
+  .btn:disabled{opacity:0.5;box-shadow:none;}
+  .btn.secondary{background:transparent;border:1px solid var(--border);color:var(--text-primary);margin-top:8px;box-shadow:none;}
   .btn.small{width:auto;padding:8px 14px;font-size:13px;}
   #login-status{font-size:12px;color:var(--text-muted);margin-top:10px;min-height:16px;}
 
   /* ---------- Chat list ---------- */
-  .list-row{display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:1px solid var(--border);cursor:pointer;}
-  .list-row:active{background:var(--bg-card);}
+  .list-row{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.1s ease;}
+  .list-row:active{background:var(--bg-card-2);}
   .avatar{width:44px;height:44px;border-radius:12px;background:var(--bg-raised);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:15px;color:var(--accent);flex-shrink:0;}
   .avatar.group{background:linear-gradient(160deg,#3A4B3E,#232B24);color:var(--success);}
   .row-main{flex:1;min-width:0;}
@@ -83,7 +85,8 @@
   .msg.system .bubble{background:transparent;color:var(--text-muted);font-size:12px;text-align:center;padding:4px;}
 
   /* task card inside chat */
-  .task-card{background:var(--bg-card-2);border:1px solid var(--border);border-radius:14px;padding:12px 14px;cursor:pointer;}
+  .task-card{background:var(--bg-card-2);border:1px solid var(--border);border-radius:14px;padding:13px 15px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,0.15);transition:transform 0.1s ease;}
+  .task-card:active{transform:scale(0.985);}
   .task-card .tc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
   .task-card .tc-title{font-size:14px;font-weight:600;}
   .task-card .tc-tag{font-size:10px;background:var(--accent);color:var(--accent-text);border-radius:6px;padding:2px 7px;font-weight:700;letter-spacing:0.3px;flex-shrink:0;}
@@ -101,23 +104,25 @@
 
   .composer{display:flex;align-items:flex-end;gap:8px;padding:10px 12px;border-top:1px solid var(--border);flex-shrink:0;}
   .composer textarea{flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:18px;padding:10px 14px;color:var(--text-primary);font-size:14px;resize:none;max-height:90px;outline:none;font-family:inherit;}
-  .icon-btn{width:38px;height:38px;border-radius:50%;background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-size:16px;}
-  .icon-btn.send{background:var(--accent);color:var(--accent-text);border:none;}
-  .icon-btn.task{background:var(--bg-raised);color:var(--accent);}
+  .icon-btn{width:38px;height:38px;border-radius:50%;background:var(--bg-card-2);border:1px solid var(--border);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-size:14px;font-weight:600;transition:transform 0.1s ease;}
+  .icon-btn:active{transform:scale(0.92);}
+  .icon-btn.send{background:var(--accent);color:var(--accent-text);border:none;font-size:16px;box-shadow:0 2px 8px rgba(62,142,222,0.3);}
+  .icon-btn.task{background:var(--bg-raised);color:var(--accent);border-color:var(--accent-dark);}
 
   /* ---------- Slide-up panels (inline, not modal) ---------- */
-  .sheet-backdrop{position:absolute;inset:0;background:rgba(0,0,0,0.5);display:none;z-index:10;}
-  .sheet-backdrop.open{display:block;}
-  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg-card);border-radius:20px 20px 0 0;z-index:11;transform:translateY(100%);transition:transform 0.25s ease;max-height:88%;display:flex;flex-direction:column;}
+  .sheet-backdrop{position:absolute;inset:0;background:rgba(5,9,15,0.6);display:none;z-index:10;backdrop-filter:blur(2px);}
+  .sheet-backdrop.open{display:block;animation:fadeIn 0.2s ease;}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg-card);border-radius:22px 22px 0 0;z-index:11;transform:translateY(100%);transition:transform 0.28s cubic-bezier(.32,.72,0,1);max-height:88%;display:flex;flex-direction:column;box-shadow:0 -16px 40px rgba(0,0,0,0.35);}
   .sheet.open{transform:translateY(0);}
   .sheet-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:10px auto 4px;}
-  .sheet-title{font-size:16px;font-weight:600;padding:8px 18px 14px;border-bottom:1px solid var(--border);}
-  .sheet-body{padding:16px 18px;overflow-y:auto;}
+  .sheet-title{font-size:16px;font-weight:600;padding:8px 18px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .sheet-close{width:28px;height:28px;border-radius:50%;background:var(--bg-card-2);display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:14px;cursor:pointer;flex-shrink:0;}
+  .sheet-body{padding:16px 18px 24px;overflow-y:auto;}
   .sheet-body .field{max-width:none;}
   .sheet-body select{width:100%;background:var(--bg-card-2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text-primary);font-size:14px;}
   .chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
-  .chip{border:1px solid var(--border);border-radius:20px;padding:7px 13px;font-size:13px;color:var(--text-secondary);cursor:pointer;}
-  .chip.selected{background:var(--accent);border-color:var(--accent);color:var(--accent-text);font-weight:600;}
+  .chip{border:1px solid var(--border);background:var(--bg-card-2);border-radius:20px;padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;transition:all 0.12s ease;}
+  .chip.selected{background:var(--accent);border-color:var(--accent);color:var(--accent-text);font-weight:600;box-shadow:0 2px 8px rgba(62,142,222,0.3);}
   .segmented{display:flex;background:var(--bg-card-2);border-radius:10px;padding:3px;gap:3px;}
   .segmented .seg{flex:1;text-align:center;padding:9px;border-radius:8px;font-size:13px;color:var(--text-secondary);cursor:pointer;}
   .segmented .seg.active{background:var(--bg-raised);color:var(--accent);font-weight:600;}
@@ -126,9 +131,9 @@
   .slider-val{text-align:center;font-size:32px;font-weight:700;color:var(--accent);margin-bottom:4px;}
 
   /* ---------- Bottom nav ---------- */
-  .bottomnav{display:flex;border-top:1px solid var(--border);flex-shrink:0;background:var(--bg-app);}
-  .navbtn{flex:1;text-align:center;padding:9px 0 8px;font-size:11px;color:var(--text-muted);cursor:pointer;}
-  .navbtn .ic{font-size:19px;display:block;margin-bottom:2px;}
+  .bottomnav{display:flex;border-top:1px solid var(--border);flex-shrink:0;background:var(--bg-card);padding-bottom:env(safe-area-inset-bottom);}
+  .navbtn{flex:1;text-align:center;padding:10px 0 8px;font-size:11px;font-weight:500;color:var(--text-muted);cursor:pointer;transition:color 0.12s ease;}
+  .navbtn .ic{font-size:19px;display:block;margin-bottom:3px;}
   .navbtn.active{color:var(--accent);}
 
   /* ---------- Dashboard ---------- */
@@ -226,7 +231,7 @@
   <div class="sheet-backdrop" id="task-sheet-backdrop"></div>
   <div class="sheet" id="task-sheet">
     <div class="sheet-handle"></div>
-    <div class="sheet-title">Assign task</div>
+    <div class="sheet-title"><span>Assign task</span><span class="sheet-close" data-close="task-sheet">✕</span></div>
     <div class="sheet-body">
       <div class="field"><label>Title</label><input type="text" id="task-title" placeholder="e.g. Shutter Block A - column C4"></div>
       <div class="field"><label>Description (optional)</label><input type="text" id="task-desc" placeholder="Details, spec, location"></div>
@@ -251,7 +256,7 @@
   <div class="sheet-backdrop" id="progress-sheet-backdrop"></div>
   <div class="sheet" id="progress-sheet">
     <div class="sheet-handle"></div>
-    <div class="sheet-title" id="progress-sheet-title">Update progress</div>
+    <div class="sheet-title"><span id="progress-sheet-title">Update progress</span><span class="sheet-close" data-close="progress-sheet">✕</span></div>
     <div class="sheet-body">
       <div class="slider-wrap">
         <div class="slider-val" id="progress-val">0%</div>
@@ -260,11 +265,13 @@
       <div class="field"><label>Note (optional)</label><input type="text" id="progress-note" placeholder="Any update or blocker"></div>
       <button class="btn" id="btn-submit-progress">Save update</button>
     </div>
+  </div>
+
   <!-- SHEET: new site group -->
   <div class="sheet-backdrop" id="group-sheet-backdrop"></div>
   <div class="sheet" id="group-sheet">
     <div class="sheet-handle"></div>
-    <div class="sheet-title">New site group</div>
+    <div class="sheet-title"><span>New site group</span><span class="sheet-close" data-close="group-sheet">✕</span></div>
     <div class="sheet-body">
       <div class="field"><label>Group name</label><input type="text" id="group-name" placeholder="e.g. Tower B - Civil Team"></div>
       <div class="field"><label>Site (optional)</label><input type="text" id="group-site" placeholder="e.g. Anna Nagar Project"></div>
@@ -281,7 +288,7 @@
   <div class="sheet-backdrop" id="members-sheet-backdrop"></div>
   <div class="sheet" id="members-sheet">
     <div class="sheet-handle"></div>
-    <div class="sheet-title">Manage members</div>
+    <div class="sheet-title"><span>Manage members</span><span class="sheet-close" data-close="members-sheet">✕</span></div>
     <div class="sheet-body">
       <div id="members-current-list" style="display:flex;flex-direction:column;gap:8px;"></div>
       <div style="font-size:12px;color:var(--text-muted);margin:16px 0 6px;text-transform:uppercase;letter-spacing:0.5px;">Add more</div>
@@ -479,6 +486,9 @@ function toggleSheet(id, open){
   $(id).classList.toggle('open', open);
   $(id+'-backdrop').classList.toggle('open', open);
 }
+document.querySelectorAll('[data-close]').forEach(el=>{
+  el.onclick = () => toggleSheet(el.getAttribute('data-close'), false);
+});
 
 document.querySelectorAll('[data-tasktype]').forEach(el=>{
   el.onclick = () => {
