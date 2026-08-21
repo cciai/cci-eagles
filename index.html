@@ -7,8 +7,17 @@
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
 <meta name="theme-color" content="#F5F5F7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#1C1C1E" media="(prefers-color-scheme: dark)">
+<script>
+(function(){
+  try {
+    var t = localStorage.getItem('eagles-theme');
+    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+  } catch(e){}
+})();
+</script>
 <style>
   :root{
     --bg-app:#F5F5F7;
@@ -62,10 +71,29 @@
       --shadow-card:0 1px 3px rgba(0,0,0,0.35);
     }
   }
+  html[data-theme="light"]{
+    --bg-app:#F5F5F7; --bg-card:#FFFFFF; --bg-card-2:#FAFAFB; --bg-raised:#EFEFF1;
+    --accent:#007AFF; --accent-dark:#0062CC; --accent-text:#FFFFFF;
+    --success:#34C759; --success-dark:#248A3D; --danger:#FF3B30; --danger-dark:#C7291F;
+    --warning:#FF9500; --warning-dark:#C4740A;
+    --text-primary:#1D1D1F; --text-secondary:#6E6E73; --text-muted:#98989D; --border:#E5E5EA;
+    --pri-low:#8E8E93; --pri-medium:#007AFF; --pri-high:#FF9500; --pri-urgent:#FF3B30;
+    --shadow-card:0 1px 3px rgba(0,0,0,0.08);
+  }
+  html[data-theme="dark"]{
+    --bg-app:#1C1C1E; --bg-card:#2C2C2E; --bg-card-2:#232325; --bg-raised:#3A3A3C;
+    --accent:#0A84FF; --accent-dark:#0060C0; --accent-text:#FFFFFF;
+    --success:#32D74B; --success-dark:#1F7A2E; --danger:#FF453A; --danger-dark:#B8281F;
+    --warning:#FF9F0A; --warning-dark:#B8760A;
+    --text-primary:#F5F5F7; --text-secondary:#AEAEB2; --text-muted:#8E8E93; --border:#38383A;
+    --pri-low:#8E8E93; --pri-medium:#0A84FF; --pri-high:#FF9F0A; --pri-urgent:#FF453A;
+    --shadow-card:0 1px 3px rgba(0,0,0,0.35);
+  }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;height:100%;background:var(--bg-app);color:var(--text-primary);overscroll-behavior:none;overflow:hidden;-webkit-font-smoothing:antialiased;}
   #app{max-width:520px;margin:0 auto;height:100vh;height:100dvh;display:flex;flex-direction:column;position:relative;background:var(--bg-app);overflow:hidden;}
   ::-webkit-scrollbar{width:0;height:0;}
+  .ti{line-height:1;vertical-align:middle;}
 
   /* ---------- Screens ---------- */
   .screen{flex:1;overflow-y:auto;display:none;-webkit-overflow-scrolling:touch;}
@@ -351,9 +379,10 @@
   <!-- DESKTOP SIDEBAR -->
   <div id="sidebar">
     <div class="sidebar-brand"><div class="logo" style="width:32px;height:32px;"><img src="icon-192.png" alt="EAGLES" style="width:100%;height:100%;object-fit:cover;"></div><div><div class="title" style="font-size:15px;">EAGLES</div><div class="sub" id="sidebar-user-name" style="font-size:10.5px;">—</div></div></div>
-    <div class="sidebar-nav-item active" data-nav="tasks"><span class="ic">✅</span>Tasks</div>
-    <div class="sidebar-nav-item" data-nav="projects"><span class="ic">📁</span>Projects</div>
-    <div class="sidebar-nav-item" data-nav="console" id="sidebar-console" style="display:none;"><span class="ic">🛠️</span>Owner Console</div>
+    <div class="sidebar-nav-item active" data-nav="tasks"><span class="ic"><i class="ti ti-checklist"></i></span>Tasks</div>
+    <div class="sidebar-nav-item" data-nav="projects"><span class="ic"><i class="ti ti-folder"></i></span>Projects</div>
+    <div class="sidebar-nav-item" data-nav="console" id="sidebar-console" style="display:none;"><span class="ic"><i class="ti ti-settings"></i></span>Owner Console</div>
+    <div class="sidebar-nav-item" data-nav="settings"><span class="ic"><i class="ti ti-adjustments-horizontal"></i></span>Settings</div>
   </div>
 
   <div id="main-col">
@@ -365,10 +394,10 @@
       <div><div class="title">Tasks</div><div class="sub" id="header-user-name">—</div></div>
       <div class="spacer"></div>
       <div class="view-toggle">
-        <div class="vt active" data-taskview="list">☰</div>
-        <div class="vt" data-taskview="board">▦</div>
+        <div class="vt active" data-taskview="list"><i class="ti ti-list"></i></div>
+        <div class="vt" data-taskview="board"><i class="ti ti-layout-kanban"></i></div>
       </div>
-      <div class="icon-btn task" id="btn-open-task-sheet-home" style="display:none;margin-left:8px;">＋</div>
+      <div class="icon-btn task" id="btn-open-task-sheet-home" style="display:none;margin-left:8px;"><i class="ti ti-plus"></i></div>
     </div>
     <div class="view-tabs" id="smart-view-tabs">
       <div class="vtab active" data-smart="today">Today <span class="count" id="cnt-today">0</span></div>
@@ -387,7 +416,7 @@
       <div class="logo"><img src="icon-192.png" alt="EAGLES"></div>
       <div><div class="title">Projects</div><div class="sub">Site groups you're part of</div></div>
       <div class="spacer"></div>
-      <div class="icon-btn task" id="btn-open-group-sheet" style="display:none;">＋</div>
+      <div class="icon-btn task" id="btn-open-group-sheet" style="display:none;"><i class="ti ti-plus"></i></div>
     </div>
     <div id="projects-list" style="flex:1;overflow-y:auto;"></div>
   </div>
@@ -400,7 +429,7 @@
         <div class="gname" id="thread-name">—</div>
         <div class="gmeta" id="thread-meta">—</div>
       </div>
-      <div class="icon-btn" id="btn-manage-members" style="display:none;margin-left:auto;">👥</div>
+      <div class="icon-btn" id="btn-manage-members" style="display:none;margin-left:auto;"><i class="ti ti-users"></i></div>
     </div>
     <div class="subtabs">
       <div class="subtab active" data-psub="tasks">Tasks</div>
@@ -411,16 +440,16 @@
         <textarea id="qa-input" rows="1" placeholder="e.g. Shutter Block A - column C4"></textarea>
         <div class="qa-actions-row">
           <div class="qa-chip" id="qa-assignee-chip">@ Assignee</div>
-          <div class="qa-chip" id="qa-today-chip">📅 Today</div>
-          <div class="qa-chip" id="qa-tomorrow-chip">📅 Tomorrow</div>
-          <div class="icon-btn send qa-send" id="qa-send">➤</div>
+          <div class="qa-chip" id="qa-today-chip"><i class="ti ti-calendar"></i> Today</div>
+          <div class="qa-chip" id="qa-tomorrow-chip"><i class="ti ti-calendar"></i> Tomorrow</div>
+          <div class="icon-btn send qa-send" id="qa-send"><i class="ti ti-send"></i></div>
         </div>
       </div>
       <div class="chip-filter-row" style="padding-top:6px;">
-        <div class="icon-btn task" id="btn-add-category" style="width:32px;height:32px;font-size:12px;">🏷️</div>
+        <div class="icon-btn task" id="btn-add-category" style="width:32px;height:32px;font-size:12px;"><i class="ti ti-tag"></i></div>
         <div class="view-toggle" style="margin-left:auto;">
-          <div class="vt active" data-projtaskview="list">☰ List</div>
-          <div class="vt" data-projtaskview="board">▦ Board</div>
+          <div class="vt active" data-projtaskview="list"><i class="ti ti-list"></i> List</div>
+          <div class="vt" data-projtaskview="board"><i class="ti ti-layout-kanban"></i> Board</div>
         </div>
       </div>
       <div class="task-list-wrap" id="proj-task-list-view"></div>
@@ -435,11 +464,11 @@
       </div>
       <div class="composer">
         <div class="composer-pill">
-          <div class="icon-btn" id="btn-attach-photo">📷</div>
+          <div class="icon-btn" id="btn-attach-photo"><i class="ti ti-camera"></i></div>
           <textarea id="input-message" rows="1" placeholder="Message"></textarea>
         </div>
         <input type="file" id="chat-photo-input" accept="image/*" capture="environment" style="display:none;">
-        <div class="icon-btn send" id="btn-send-message">➤</div>
+        <div class="icon-btn send" id="btn-send-message"><i class="ti ti-send"></i></div>
       </div>
     </div>
   </div>
@@ -457,11 +486,38 @@
     <div class="console-pane" id="cpane-progress" style="display:none;"></div>
   </div>
 
+  <!-- SETTINGS -->
+  <div class="screen" id="screen-settings">
+    <div class="brandbar"><div class="logo"><img src="icon-192.png" alt="EAGLES"></div><div><div class="title">Settings</div><div class="sub">Appearance &amp; account</div></div></div>
+    <div class="console-pane">
+      <div class="cs-section">
+        <div class="cs-heading">Profile</div>
+        <div class="cs-card">
+          <div style="font-weight:600;font-size:14.5px;" id="settings-name">—</div>
+          <div style="font-size:12.5px;color:var(--text-muted);margin-top:2px;" id="settings-meta">—</div>
+        </div>
+      </div>
+      <div class="cs-section">
+        <div class="cs-heading">Appearance</div>
+        <div class="pri-picker" id="theme-picker">
+          <div class="pp low" data-theme-choice="light"><i class="ti ti-sun" style="display:block;margin-bottom:4px;font-size:16px;"></i>Light</div>
+          <div class="pp medium" data-theme-choice="dark"><i class="ti ti-moon" style="display:block;margin-bottom:4px;font-size:16px;"></i>Dark</div>
+          <div class="pp high" data-theme-choice="system"><i class="ti ti-device-desktop" style="display:block;margin-bottom:4px;font-size:16px;"></i>System</div>
+        </div>
+        <p style="font-size:11px;color:var(--text-muted);margin-top:8px;">System follows your phone's own light/dark setting automatically.</p>
+      </div>
+      <div class="cs-section">
+        <button class="btn secondary" id="btn-logout" style="color:var(--danger);border-color:var(--danger-dark);">Log out</button>
+      </div>
+    </div>
+  </div>
+
   <!-- BOTTOM NAV -->
   <div class="bottomnav" id="bottomnav" style="display:none;">
-    <div class="navbtn active" data-nav="tasks"><span class="ic">✅</span>Tasks</div>
-    <div class="navbtn" data-nav="projects"><span class="ic">📁</span>Projects</div>
-    <div class="navbtn" data-nav="console" id="nav-console" style="display:none;"><span class="ic">🛠️</span>Console</div>
+    <div class="navbtn active" data-nav="tasks"><span class="ic"><i class="ti ti-checklist"></i></span>Tasks</div>
+    <div class="navbtn" data-nav="projects"><span class="ic"><i class="ti ti-folder"></i></span>Projects</div>
+    <div class="navbtn" data-nav="console" id="nav-console" style="display:none;"><span class="ic"><i class="ti ti-settings"></i></span>Console</div>
+    <div class="navbtn" data-nav="settings"><span class="ic"><i class="ti ti-adjustments-horizontal"></i></span>Settings</div>
   </div>
   </div><!-- /main-col -->
 
@@ -469,7 +525,7 @@
   <div class="sheet-backdrop" id="task-sheet-backdrop"></div>
   <div class="sheet" id="task-sheet">
     <div class="sheet-handle"></div>
-    <div class="sheet-title"><span>New task</span><span class="sheet-close" data-close="task-sheet">✕</span></div>
+    <div class="sheet-title"><span>New task</span><span class="sheet-close" data-close="task-sheet"><i class="ti ti-x"></i></span></div>
     <div class="sheet-body">
       <div class="field"><label>Project</label><select id="task-project"></select></div>
       <div class="field"><label>Title</label><input type="text" id="task-title" placeholder="e.g. Shutter Block A - column C4"></div>
@@ -502,7 +558,7 @@
   <div class="sheet-backdrop" id="task-detail-sheet-backdrop"></div>
   <div class="sheet" id="task-detail-sheet">
     <div class="sheet-handle"></div>
-    <div class="sheet-title"><span id="td-title-header">Task</span><span class="sheet-close" data-close="task-detail-sheet">✕</span></div>
+    <div class="sheet-title"><span id="td-title-header">Task</span><span class="sheet-close" data-close="task-detail-sheet"><i class="ti ti-x"></i></span></div>
     <div class="sheet-body" id="td-body"></div>
   </div>
 
@@ -510,7 +566,7 @@
   <div class="sheet-backdrop" id="group-sheet-backdrop"></div>
   <div class="sheet" id="group-sheet">
     <div class="sheet-handle"></div>
-    <div class="sheet-title"><span>New project</span><span class="sheet-close" data-close="group-sheet">✕</span></div>
+    <div class="sheet-title"><span>New project</span><span class="sheet-close" data-close="group-sheet"><i class="ti ti-x"></i></span></div>
     <div class="sheet-body">
       <div class="field"><label>Project name</label><input type="text" id="group-name" placeholder="e.g. Tower B - Civil Team"></div>
       <div class="field"><label>Site (optional)</label><input type="text" id="group-site" placeholder="e.g. Anna Nagar Project"></div>
@@ -527,7 +583,7 @@
   <div class="sheet-backdrop" id="members-sheet-backdrop"></div>
   <div class="sheet" id="members-sheet">
     <div class="sheet-handle"></div>
-    <div class="sheet-title"><span>Manage members</span><span class="sheet-close" data-close="members-sheet">✕</span></div>
+    <div class="sheet-title"><span>Manage members</span><span class="sheet-close" data-close="members-sheet"><i class="ti ti-x"></i></span></div>
     <div class="sheet-body">
       <div id="members-current-list" style="display:flex;flex-direction:column;gap:8px;"></div>
       <div style="font-size:12px;color:var(--text-muted);margin:16px 0 6px;text-transform:uppercase;letter-spacing:0.5px;">Add more</div>
@@ -539,7 +595,7 @@
   <div class="sheet-backdrop" id="category-sheet-backdrop"></div>
   <div class="sheet" id="category-sheet">
     <div class="sheet-handle"></div>
-    <div class="sheet-title"><span>New category</span><span class="sheet-close" data-close="category-sheet">✕</span></div>
+    <div class="sheet-title"><span>New category</span><span class="sheet-close" data-close="category-sheet"><i class="ti ti-x"></i></span></div>
     <div class="sheet-body">
       <div class="field"><label>Name</label><input type="text" id="cat-name" placeholder="e.g. Shuttering, Payments, QS"></div>
       <div class="field">
@@ -552,7 +608,7 @@
 
   <!-- FULLSCREEN IMAGE VIEWER -->
   <div id="image-viewer">
-    <div class="iv-close" id="btn-close-viewer">✕</div>
+    <div class="iv-close" id="btn-close-viewer"><i class="ti ti-x"></i></div>
     <img id="image-viewer-img" src="">
   </div>
 
@@ -722,8 +778,48 @@ function goNav(target){
   if (target==='tasks') { show('screen-tasks'); renderTasksHome(); }
   if (target==='projects') { show('screen-projects'); renderProjectsList(); }
   if (target==='console') { show('screen-console'); initConsole(); }
+  if (target==='settings') { show('screen-settings'); renderSettings(); }
 }
 document.querySelectorAll('[data-nav]').forEach(el=>{ el.onclick = () => goNav(el.getAttribute('data-nav')); });
+
+/* ---------------- THEME ---------------- */
+function getThemePref(){
+  try { return localStorage.getItem('eagles-theme') || 'system'; } catch(e){ return 'system'; }
+}
+function applyTheme(pref){
+  if (pref === 'light' || pref === 'dark') document.documentElement.setAttribute('data-theme', pref);
+  else document.documentElement.removeAttribute('data-theme');
+  try { localStorage.setItem('eagles-theme', pref); } catch(e){}
+}
+document.querySelectorAll('[data-theme-choice]').forEach(el=>{
+  el.onclick = () => {
+    applyTheme(el.getAttribute('data-theme-choice'));
+    document.querySelectorAll('[data-theme-choice]').forEach(x=>x.classList.remove('active'));
+    el.classList.add('active');
+  };
+});
+
+function renderSettings(){
+  if (me) {
+    $('settings-name').textContent = me.name;
+    $('settings-meta').textContent = (me.phone||'') + ' · ' + me.role;
+  }
+  const current = getThemePref();
+  document.querySelectorAll('[data-theme-choice]').forEach(el=>{
+    el.classList.toggle('active', el.getAttribute('data-theme-choice') === current);
+  });
+}
+
+$('btn-logout').onclick = async () => {
+  if (!confirm('Log out of EAGLES?')) return;
+  await sb.auth.signOut();
+  session = null; me = null;
+  $('bottomnav').style.display = 'none';
+  $('nav-console').style.display = 'none';
+  $('sidebar-console').style.display = 'none';
+  $('input-phone').value = ''; $('input-pin').value = ''; $('login-status').textContent = '';
+  show('screen-login');
+};
 
 /* ---------------- CONVERSATIONS (projects) ---------------- */
 async function loadConversations(){
@@ -925,7 +1021,7 @@ function taskRowHTML(t, showProject){
   }
   const who = assignees.length === 1 ? (assignees[0].ea_users?.name||'') : (assignees.length>1 ? assignees.length+' people' : 'Unassigned');
   return `<div class="task-row pri-${t.priority} ${done?'tr-done':''}" data-task-id="${t.id}">
-    <div class="tr-check ${isDoneForMe?'checked':''}" data-quickcomplete="${t.id}">✓</div>
+    <div class="tr-check ${isDoneForMe?'checked':''}" data-quickcomplete="${t.id}"><i class="ti ti-check"></i></div>
     <div class="tr-avatar">${(who||'?').slice(0,2).toUpperCase()}</div>
     <div class="tr-main">
       <div class="tr-title">${esc(t.title)}</div>
@@ -942,7 +1038,7 @@ function taskRowHTML(t, showProject){
 function renderTaskListInto(containerId, tasks, showProject){
   const el = $(containerId);
   const sorted = [...tasks].sort((a,b)=>priorityRank(a.priority)-priorityRank(b.priority));
-  el.innerHTML = sorted.length ? sorted.map(t=>taskRowHTML(t, showProject)).join('') : `<div class="empty-state"><div class="big">✅</div>No tasks here.</div>`;
+  el.innerHTML = sorted.length ? sorted.map(t=>taskRowHTML(t, showProject)).join('') : `<div class="empty-state"><div class="big"><i class="ti ti-checklist"></i></div>No tasks here.</div>`;
   el.querySelectorAll('[data-task-id]').forEach(row=>{
     row.onclick = () => {
       const t = tasks.find(x=>x.id===row.getAttribute('data-task-id'));
@@ -991,7 +1087,7 @@ function renderTaskBoardInto(containerId, tasks, showProject){
 /* ================= PROJECTS LIST ================= */
 async function renderProjectsList(){
   const el = $('projects-list');
-  if (!conversations.length) { el.innerHTML = `<div class="empty-state"><div class="big">📁</div>No projects yet.</div>`; return; }
+  if (!conversations.length) { el.innerHTML = `<div class="empty-state"><div class="big"><i class="ti ti-folder"></i></div>No projects yet.</div>`; return; }
   el.innerHTML = conversations.map(c => `
     <div class="project-card" data-conv="${c.id}">
       <div class="avatar group">${(c.name||'?').slice(0,2).toUpperCase()}</div>
@@ -1057,7 +1153,7 @@ async function renderProjectTasks(){
 
   if (projTaskViewMode === 'list') {
     const el = $('proj-task-list-view');
-    if (!allTasks.length) { el.innerHTML = `<div class="empty-state"><div class="big">✅</div>No tasks yet.</div>`; }
+    if (!allTasks.length) { el.innerHTML = `<div class="empty-state"><div class="big"><i class="ti ti-checklist"></i></div>No tasks yet.</div>`; }
     else {
       el.innerHTML = groups.filter(g=>g.tasks.length || g.cat).map(g => `
         <div class="cat-group-head">
@@ -1086,7 +1182,7 @@ async function renderProjectTasks(){
       <div class="board-col">
         <div class="board-col-head"><span style="display:flex;align-items:center;gap:6px;"><span class="cat-swatch" style="background:${g.cat.color};"></span>${esc(g.cat.name)}</span><span>${g.tasks.length}</span></div>
         <div class="board-cards">${g.tasks.map(boardCardHTML).join('') || ''}</div>
-      </div>`).join('') : `<div class="empty-state"><div class="big">🏷️</div>No categories yet. Tap 🏷️ above to add one.</div>`;
+      </div>`).join('') : `<div class="empty-state"><div class="big"><i class="ti ti-tag"></i></div>No categories yet. Tap the tag icon above to add one.</div>`;
     el.querySelectorAll('[data-task-id]').forEach(card=>{
       card.onclick = () => { const t = allTasks.find(x=>x.id===card.getAttribute('data-task-id')); openTaskDetail(t); };
     });
@@ -1124,11 +1220,11 @@ function renderMessage(m){
     wrap.innerHTML = `<div class="bubble">${esc(m.content)}</div>`;
   } else if (m.msg_type === 'image') {
     wrap.className = 'msg' + (m.sender_id===me.id ? ' mine':'');
-    wrap.innerHTML = `${m.sender_id!==me.id?`<div class="sender">${esc(m.ea_users?.name||'')}</div>`:''}<div class="bubble"><img src="${m.image_url}" alt="Site photo">${m.content?`<div>${esc(m.content)}</div>`:''}<div class="time">${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}${m.sender_id===me.id?' <span class="tick">✓</span>':''}</div></div>`;
+    wrap.innerHTML = `${m.sender_id!==me.id?`<div class="sender">${esc(m.ea_users?.name||'')}</div>`:''}<div class="bubble"><img src="${m.image_url}" alt="Site photo">${m.content?`<div>${esc(m.content)}</div>`:''}<div class="time">${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}${m.sender_id===me.id?' <span class="tick"><i class="ti ti-check"></i></span>':''}</div></div>`;
     wrap.querySelector('img').onclick = () => openImageViewer(m.image_url);
   } else {
     wrap.className = 'msg' + (m.sender_id===me.id ? ' mine':'');
-    wrap.innerHTML = `${m.sender_id!==me.id?`<div class="sender">${esc(m.ea_users?.name||'')}</div>`:''}<div class="bubble">${esc(m.content||'')}<div class="time">${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}${m.sender_id===me.id?' <span class="tick">✓</span>':''}</div></div>`;
+    wrap.innerHTML = `${m.sender_id!==me.id?`<div class="sender">${esc(m.ea_users?.name||'')}</div>`:''}<div class="bubble">${esc(m.content||'')}<div class="time">${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}${m.sender_id===me.id?' <span class="tick"><i class="ti ti-check"></i></span>':''}</div></div>`;
   }
   $('messages-list').appendChild(wrap);
 }
@@ -1321,7 +1417,7 @@ async function renderTaskDetailBody(){
       <button class="btn" id="btn-save-td-progress" style="margin-top:8px;">Save progress</button>
       <div style="margin-top:10px;">
         <div id="td-photo-preview" style="display:none;margin-bottom:8px;"><img id="td-photo-img" src="" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px;"></div>
-        <button class="btn secondary" id="btn-td-attach-photo" style="margin-top:0;">📷 Add site photo</button>
+        <button class="btn secondary" id="btn-td-attach-photo" style="margin-top:0;"><i class="ti ti-camera"></i> Add site photo</button>
         <input type="file" id="td-photo-input" accept="image/*" capture="environment" style="display:none;">
       </div>
     </div>` : ''}
@@ -1340,9 +1436,9 @@ async function renderTaskDetailBody(){
       </div>
       <div class="comment-input-row">
         <textarea id="td-comment-input" rows="1" placeholder="Add a comment…"></textarea>
-        <div class="icon-btn" id="btn-td-comment-photo" style="width:34px;height:34px;">📷</div>
+        <div class="icon-btn" id="btn-td-comment-photo" style="width:34px;height:34px;"><i class="ti ti-camera"></i></div>
         <input type="file" id="td-comment-photo-input" accept="image/*" capture="environment" style="display:none;">
-        <div class="icon-btn send" id="btn-send-td-comment" style="width:34px;height:34px;">➤</div>
+        <div class="icon-btn send" id="btn-send-td-comment" style="width:34px;height:34px;"><i class="ti ti-send"></i></div>
       </div>
     </div>
     ${canManage ? `<button class="btn secondary" id="btn-delete-task" style="color:var(--danger);border-color:var(--danger-dark);">Close / remove task</button>` : ''}
@@ -1450,7 +1546,7 @@ async function refreshMembersSheet(){
     <div class="list-row" style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">
       <div class="avatar">${(m.ea_users?.name||'?').slice(0,2).toUpperCase()}</div>
       <div style="flex:1;"><div style="font-weight:600;font-size:13.5px;">${esc(m.ea_users?.name)}</div><div style="font-size:11px;color:var(--text-muted);">${m.role} · ${esc(m.ea_users?.phone||'')}</div></div>
-      ${m.user_id !== me.id ? `<div class="icon-btn" data-remove="${m.user_id}" style="width:32px;height:32px;font-size:13px;">✕</div>` : ''}
+      ${m.user_id !== me.id ? `<div class="icon-btn" data-remove="${m.user_id}" style="width:32px;height:32px;font-size:13px;"><i class="ti ti-x"></i></div>` : ''}
     </div>`).join('');
   $('members-current-list').querySelectorAll('[data-remove]').forEach(el => {
     el.onclick = async () => {
@@ -1462,7 +1558,7 @@ async function refreshMembersSheet(){
   const { data: allUsers } = await sb.from('ea_users').select('id, name, phone').order('name');
   const addable = (allUsers||[]).filter(u => !currentIds.has(u.id));
   $('members-add-list').innerHTML = addable.length
-    ? addable.map(u => `<div class="chip" data-add="${u.id}">＋ ${esc(u.name)} <span style="opacity:0.6;">· ${esc(u.phone||'')}</span></div>`).join('')
+    ? addable.map(u => `<div class="chip" data-add="${u.id}"><i class="ti ti-plus"></i> ${esc(u.name)} <span style="opacity:0.6;">· ${esc(u.phone||'')}</span></div>`).join('')
     : `<p style="font-size:12px;color:var(--text-muted);">Everyone who's logged in is already a member.</p>`;
   $('members-add-list').querySelectorAll('[data-add]').forEach(el => {
     el.onclick = async () => {
