@@ -14,7 +14,8 @@
 (function(){
   try {
     var t = localStorage.getItem('eagles-theme');
-    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+    if (t === 'light') document.documentElement.classList.add('theme-force-light');
+    else if (t === 'dark') document.documentElement.classList.add('theme-force-dark');
   } catch(e){}
 })();
 </script>
@@ -71,29 +72,48 @@
       --shadow-card:0 1px 3px rgba(0,0,0,0.35);
     }
   }
-  html[data-theme="light"]{
-    --bg-app:#F5F5F7; --bg-card:#FFFFFF; --bg-card-2:#FAFAFB; --bg-raised:#EFEFF1;
-    --accent:#007AFF; --accent-dark:#0062CC; --accent-text:#FFFFFF;
-    --success:#34C759; --success-dark:#248A3D; --danger:#FF3B30; --danger-dark:#C7291F;
-    --warning:#FF9500; --warning-dark:#C4740A;
-    --text-primary:#1D1D1F; --text-secondary:#6E6E73; --text-muted:#98989D; --border:#E5E5EA;
-    --pri-low:#8E8E93; --pri-medium:#007AFF; --pri-high:#FF9500; --pri-urgent:#FF3B30;
-    --shadow-card:0 1px 3px rgba(0,0,0,0.08);
+  html.theme-force-light{
+    --bg-app:#F5F5F7 !important; --bg-card:#FFFFFF !important; --bg-card-2:#FAFAFB !important; --bg-raised:#EFEFF1 !important;
+    --accent:#007AFF !important; --accent-dark:#0062CC !important; --accent-text:#FFFFFF !important;
+    --success:#34C759 !important; --success-dark:#248A3D !important; --danger:#FF3B30 !important; --danger-dark:#C7291F !important;
+    --warning:#FF9500 !important; --warning-dark:#C4740A !important;
+    --text-primary:#1D1D1F !important; --text-secondary:#6E6E73 !important; --text-muted:#98989D !important; --border:#E5E5EA !important;
+    --pri-low:#8E8E93 !important; --pri-medium:#007AFF !important; --pri-high:#FF9500 !important; --pri-urgent:#FF3B30 !important;
+    --shadow-card:0 1px 3px rgba(0,0,0,0.08) !important;
   }
-  html[data-theme="dark"]{
-    --bg-app:#1C1C1E; --bg-card:#2C2C2E; --bg-card-2:#232325; --bg-raised:#3A3A3C;
-    --accent:#0A84FF; --accent-dark:#0060C0; --accent-text:#FFFFFF;
-    --success:#32D74B; --success-dark:#1F7A2E; --danger:#FF453A; --danger-dark:#B8281F;
-    --warning:#FF9F0A; --warning-dark:#B8760A;
-    --text-primary:#F5F5F7; --text-secondary:#AEAEB2; --text-muted:#8E8E93; --border:#38383A;
-    --pri-low:#8E8E93; --pri-medium:#0A84FF; --pri-high:#FF9F0A; --pri-urgent:#FF453A;
-    --shadow-card:0 1px 3px rgba(0,0,0,0.35);
+  html.theme-force-dark{
+    --bg-app:#1C1C1E !important; --bg-card:#2C2C2E !important; --bg-card-2:#232325 !important; --bg-raised:#3A3A3C !important;
+    --accent:#0A84FF !important; --accent-dark:#0060C0 !important; --accent-text:#FFFFFF !important;
+    --success:#32D74B !important; --success-dark:#1F7A2E !important; --danger:#FF453A !important; --danger-dark:#B8281F !important;
+    --warning:#FF9F0A !important; --warning-dark:#B8760A !important;
+    --text-primary:#F5F5F7 !important; --text-secondary:#AEAEB2 !important; --text-muted:#8E8E93 !important; --border:#38383A !important;
+    --pri-low:#8E8E93 !important; --pri-medium:#0A84FF !important; --pri-high:#FF9F0A !important; --pri-urgent:#FF453A !important;
+    --shadow-card:0 1px 3px rgba(0,0,0,0.35) !important;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;height:100%;background:var(--bg-app);color:var(--text-primary);overscroll-behavior:none;overflow:hidden;-webkit-font-smoothing:antialiased;}
   #app{max-width:520px;margin:0 auto;height:100vh;height:100dvh;display:flex;flex-direction:column;position:relative;background:var(--bg-app);overflow:hidden;}
   ::-webkit-scrollbar{width:0;height:0;}
   .ti{line-height:1;vertical-align:middle;}
+
+  /* ---------- Site progress card ---------- */
+  .site-progress-card{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;margin:10px 12px 4px;padding:14px 16px;flex-shrink:0;box-shadow:var(--shadow-card);}
+  .spc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+  .spc-title{font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;font-weight:600;}
+  .spc-pct{font-size:22px;font-weight:700;}
+  .spc-meta{font-size:11.5px;color:var(--text-muted);margin-top:6px;}
+  .spc-history{margin-top:10px;border-top:1px solid var(--border);padding-top:8px;max-height:90px;overflow-y:auto;}
+  .spc-history-item{display:flex;justify-content:space-between;font-size:12px;color:var(--text-secondary);padding:4px 0;}
+
+  /* ---------- Progress wheel + stats (Settings) ---------- */
+  .wheel-row{display:flex;align-items:center;gap:18px;padding:6px 0 10px;}
+  .stat-mini-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;}
+  .stat-mini{background:var(--bg-card-2);border-radius:10px;padding:10px;text-align:center;}
+  .stat-mini .n{font-size:17px;font-weight:700;}
+  .stat-mini .l{font-size:10.5px;color:var(--text-muted);margin-top:2px;}
+  .period-tabs{display:flex;gap:6px;margin-bottom:4px;}
+  .period-tab{padding:6px 12px;border-radius:8px;font-size:12px;color:var(--text-secondary);background:var(--bg-card-2);cursor:pointer;}
+  .period-tab.active{background:var(--accent);color:var(--accent-text);font-weight:600;}
 
   /* ---------- Screens ---------- */
   .screen{flex:1;overflow-y:auto;display:none;-webkit-overflow-scrolling:touch;}
@@ -436,6 +456,16 @@
       <div class="subtab" data-psub="chat">Chat</div>
     </div>
     <div id="pane-project-tasks" style="flex:1;display:flex;flex-direction:column;min-height:0;">
+      <div class="site-progress-card">
+        <div class="spc-top">
+          <span class="spc-title">Site progress</span>
+          <span class="spc-pct" id="site-progress-pct">—</span>
+        </div>
+        <div class="gauge"><div class="gauge-fill" id="site-progress-fill" style="width:0%"></div></div>
+        <div class="spc-meta" id="site-progress-meta">No updates yet</div>
+        <button class="btn secondary" id="btn-update-site-progress" style="margin-top:10px;">Update progress</button>
+        <div class="spc-history" id="site-progress-history"></div>
+      </div>
       <div class="quick-add-card">
         <textarea id="qa-input" rows="1" placeholder="e.g. Shutter Block A - column C4"></textarea>
         <div class="qa-actions-row">
@@ -495,6 +525,22 @@
         <div class="cs-card">
           <div style="font-weight:600;font-size:14.5px;" id="settings-name">—</div>
           <div style="font-size:12.5px;color:var(--text-muted);margin-top:2px;" id="settings-meta">—</div>
+        </div>
+      </div>
+      <div class="cs-section">
+        <div class="cs-heading">My progress</div>
+        <div class="cs-card">
+          <div class="period-tabs" id="progress-period-tabs">
+            <div class="period-tab active" data-period="week">This week</div>
+            <div class="period-tab" data-period="month">This month</div>
+          </div>
+          <div class="wheel-row">
+            <div id="progress-wheel-holder"></div>
+            <div style="flex:1;">
+              <div style="font-size:13px;color:var(--text-secondary);">Tasks due in this period, completed on time</div>
+            </div>
+          </div>
+          <div class="stat-mini-row" id="progress-stat-row"></div>
         </div>
       </div>
       <div class="cs-section">
@@ -588,6 +634,24 @@
       <div id="members-current-list" style="display:flex;flex-direction:column;gap:8px;"></div>
       <div style="font-size:12px;color:var(--text-muted);margin:16px 0 6px;text-transform:uppercase;letter-spacing:0.5px;">Add more</div>
       <div id="members-add-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+  </div>
+
+  <!-- SHEET: update site progress -->
+  <div class="sheet-backdrop" id="site-progress-sheet-backdrop"></div>
+  <div class="sheet" id="site-progress-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title"><span>Update site progress</span><span class="sheet-close" data-close="site-progress-sheet">✕</span></div>
+    <div class="sheet-body">
+      <div class="slider-wrap">
+        <div class="slider-val" id="sp-slider-val">0%</div>
+        <input type="range" id="sp-slider" min="0" max="100" step="5" value="0">
+      </div>
+      <div class="field"><label>Note (optional)</label><input type="text" id="sp-note" placeholder="What changed on site"></div>
+      <div id="sp-photo-preview" style="display:none;margin-bottom:8px;"><img id="sp-photo-img" src="" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px;"></div>
+      <button class="btn secondary" id="btn-sp-attach-photo" style="margin-top:0;"><i class="ti ti-camera"></i> Add site photo</button>
+      <input type="file" id="sp-photo-input" accept="image/*" capture="environment" style="display:none;">
+      <button class="btn" id="btn-submit-site-progress" style="margin-top:12px;">Save</button>
     </div>
   </div>
 
@@ -771,6 +835,123 @@ $('btn-add-category').onclick = () => {
   openCategorySheet(activeConversation.id, () => renderProjectTasks());
 };
 
+/* ---------------- SITE PROGRESS TRACKER ---------------- */
+async function renderSiteProgress(convId){
+  const { data: updates } = await sb.from('ea_site_progress_updates').select('*, ea_users(name)').eq('conversation_id', convId).order('created_at', {ascending:false}).limit(5);
+  const latest = (updates && updates[0]) || null;
+  const pct = latest ? latest.progress_pct : 0;
+  $('site-progress-pct').textContent = pct + '%';
+  $('site-progress-fill').style.width = pct + '%';
+  $('site-progress-fill').classList.toggle('done', pct >= 100);
+  $('site-progress-meta').textContent = latest
+    ? `Last updated by ${esc(latest.ea_users?.name||'')} · ${new Date(latest.created_at).toLocaleDateString()}`
+    : 'No updates yet — be the first to set it';
+  $('site-progress-history').innerHTML = (updates||[]).map(u=>`
+    <div class="spc-history-item"><span>${esc(u.ea_users?.name||'')} set ${u.progress_pct}%</span><span>${new Date(u.created_at).toLocaleDateString()}</span></div>
+  `).join('');
+}
+
+let spPendingPhoto = null;
+$('btn-update-site-progress').onclick = () => {
+  if (!activeConversation) return;
+  $('sp-slider').value = parseInt($('site-progress-pct').textContent) || 0;
+  $('sp-slider-val').textContent = $('sp-slider').value + '%';
+  $('sp-note').value = '';
+  spPendingPhoto = null;
+  $('sp-photo-preview').style.display = 'none';
+  $('sp-photo-input').value = '';
+  toggleSheet('site-progress-sheet', true);
+};
+$('sp-slider').oninput = (e) => { $('sp-slider-val').textContent = e.target.value + '%'; };
+$('btn-sp-attach-photo').onclick = () => $('sp-photo-input').click();
+$('sp-photo-input').onchange = (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  spPendingPhoto = f;
+  $('sp-photo-img').src = URL.createObjectURL(f);
+  $('sp-photo-preview').style.display = 'block';
+};
+$('btn-submit-site-progress').onclick = async () => {
+  const pct = parseInt($('sp-slider').value, 10);
+  const note = $('sp-note').value.trim();
+  $('btn-submit-site-progress').disabled = true;
+  try {
+    let photoUrl = null;
+    if (spPendingPhoto) photoUrl = await uploadPhoto(spPendingPhoto, activeConversation.id);
+    await sb.from('ea_site_progress_updates').insert({ conversation_id: activeConversation.id, user_id: me.id, progress_pct: pct, note: note || null, photo_url: photoUrl });
+    const summary = `${me.name} updated site progress to ${pct}%${note?': '+note:''}`;
+    if (photoUrl) await sb.from('ea_messages').insert({ conversation_id: activeConversation.id, sender_id: me.id, msg_type:'image', image_url: photoUrl, content: summary });
+    else await sb.from('ea_messages').insert({ conversation_id: activeConversation.id, sender_id: me.id, msg_type:'system', content: summary });
+    toggleSheet('site-progress-sheet', false);
+    await renderSiteProgress(activeConversation.id);
+  } catch (e) { alert('Could not save: ' + (e.message||e)); }
+  finally { $('btn-submit-site-progress').disabled = false; }
+};
+
+/* ---------------- PERSONAL PROGRESS (Settings) ---------------- */
+function progressWheelSVG(pct, size, strokeWidth, color){
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (Math.max(0,Math.min(100,pct)) / 100) * circumference;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <circle cx="${size/2}" cy="${size/2}" r="${radius}" fill="none" stroke="var(--bg-raised)" stroke-width="${strokeWidth}"/>
+    <circle cx="${size/2}" cy="${size/2}" r="${radius}" fill="none" stroke="${color}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" transform="rotate(-90 ${size/2} ${size/2})"/>
+    <text x="50%" y="50%" text-anchor="middle" dominant-baseline="central" font-size="${Math.round(size*0.24)}" font-weight="700" fill="var(--text-primary)">${Math.round(pct)}%</text>
+  </svg>`;
+}
+
+function getWeekRange(){
+  const now = new Date();
+  const day = now.getDay();
+  const diffToMonday = (day === 0 ? -6 : 1 - day);
+  const monday = new Date(now); monday.setDate(now.getDate()+diffToMonday); monday.setHours(0,0,0,0);
+  const sunday = new Date(monday); sunday.setDate(monday.getDate()+6); sunday.setHours(23,59,59,999);
+  return [monday, sunday];
+}
+function getMonthRange(){
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), 1);
+  const end = new Date(now.getFullYear(), now.getMonth()+1, 0, 23,59,59,999);
+  return [start, end];
+}
+
+let currentProgressPeriod = 'week';
+document.querySelectorAll('#progress-period-tabs .period-tab').forEach(el=>{
+  el.onclick = () => {
+    document.querySelectorAll('#progress-period-tabs .period-tab').forEach(x=>x.classList.remove('active'));
+    el.classList.add('active');
+    currentProgressPeriod = el.getAttribute('data-period');
+    renderMyProgress();
+  };
+});
+
+async function renderMyProgress(){
+  if (!me) return;
+  const { data: rows } = await sb.from('ea_task_assignees').select('*, ea_tasks(due_date, status)').eq('user_id', me.id);
+  const all = (rows||[]).filter(r => r.ea_tasks && r.ea_tasks.status === 'active');
+
+  const overallTotal = all.length;
+  const overallDone = all.filter(r=>r.status==='completed').length;
+  const overallPct = overallTotal ? Math.round((overallDone/overallTotal)*100) : 0;
+
+  const [start, end] = currentProgressPeriod === 'week' ? getWeekRange() : getMonthRange();
+  const inPeriod = all.filter(r => r.ea_tasks.due_date && new Date(r.ea_tasks.due_date) >= start && new Date(r.ea_tasks.due_date) <= end);
+  const periodTotal = inPeriod.length;
+  const periodDone = inPeriod.filter(r=>r.status==='completed').length;
+  const today = new Date();
+  const periodOverdue = inPeriod.filter(r=> r.status!=='completed' && new Date(r.ea_tasks.due_date) < today).length;
+  const periodPct = periodTotal ? Math.round((periodDone/periodTotal)*100) : 0;
+
+  const shownPct = periodTotal ? periodPct : overallPct;
+  const color = shownPct >= 75 ? 'var(--success)' : (shownPct >= 40 ? 'var(--warning)' : 'var(--danger)');
+  $('progress-wheel-holder').innerHTML = progressWheelSVG(shownPct, 92, 10, color);
+
+  $('progress-stat-row').innerHTML = `
+    <div class="stat-mini"><div class="n">${periodTotal}</div><div class="l">Due this ${currentProgressPeriod}</div></div>
+    <div class="stat-mini"><div class="n" style="color:var(--success);">${periodDone}</div><div class="l">Completed</div></div>
+    <div class="stat-mini"><div class="n" style="color:var(--danger);">${periodOverdue}</div><div class="l">Overdue</div></div>
+  `;
+}
+
 /* ---------------- NAV ---------------- */
 function goNav(target){
   document.querySelectorAll('.navbtn, .sidebar-nav-item').forEach(x=>x.classList.remove('active'));
@@ -787,8 +968,9 @@ function getThemePref(){
   try { return localStorage.getItem('eagles-theme') || 'system'; } catch(e){ return 'system'; }
 }
 function applyTheme(pref){
-  if (pref === 'light' || pref === 'dark') document.documentElement.setAttribute('data-theme', pref);
-  else document.documentElement.removeAttribute('data-theme');
+  document.documentElement.classList.remove('theme-force-light', 'theme-force-dark');
+  if (pref === 'light') document.documentElement.classList.add('theme-force-light');
+  else if (pref === 'dark') document.documentElement.classList.add('theme-force-dark');
   try { localStorage.setItem('eagles-theme', pref); } catch(e){}
 }
 document.querySelectorAll('[data-theme-choice]').forEach(el=>{
@@ -808,6 +990,7 @@ function renderSettings(){
   document.querySelectorAll('[data-theme-choice]').forEach(el=>{
     el.classList.toggle('active', el.getAttribute('data-theme-choice') === current);
   });
+  renderMyProgress();
 }
 
 $('btn-logout').onclick = async () => {
@@ -1112,6 +1295,7 @@ async function openProject(convId){
   await loadMembers(convId);
   resetQuickAdd();
   await renderProjectTasks();
+  await renderSiteProgress(convId);
 }
 $('btn-back-to-projects').onclick = () => { show('screen-projects'); renderProjectsList(); };
 
