@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>EAGLES · CCI</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#1B1F1C">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#0F1620">
 <style>
   :root{
     --bg-app:#0F1620;
@@ -60,8 +62,8 @@
   /* ---------- Chat list ---------- */
   .list-row{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.1s ease;}
   .list-row:active{background:var(--bg-card-2);}
-  .avatar{width:44px;height:44px;border-radius:12px;background:var(--bg-raised);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:15px;color:var(--accent);flex-shrink:0;}
-  .avatar.group{background:linear-gradient(160deg,#3A4B3E,#232B24);color:var(--success);}
+  .avatar{width:44px;height:44px;border-radius:50%;background:var(--bg-raised);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:15px;color:var(--accent);flex-shrink:0;}
+  .avatar.group{background:linear-gradient(160deg,var(--accent-dark),#0F2B47);color:#BFE0FF;}
   .row-main{flex:1;min-width:0;}
   .row-main .name{font-size:15px;font-weight:600;display:flex;justify-content:space-between;gap:8px;}
   .row-main .name .time{font-size:11px;font-weight:400;color:var(--text-muted);}
@@ -71,17 +73,23 @@
   .empty-state .big{font-size:32px;margin-bottom:10px;}
 
   /* ---------- Thread ---------- */
-  .thread-header{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border);flex-shrink:0;}
-  .thread-header .back{font-size:20px;color:var(--text-secondary);cursor:pointer;padding:4px;}
+  .thread-header{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-card-2);border-bottom:1px solid var(--border);flex-shrink:0;box-shadow:0 1px 8px rgba(0,0,0,0.15);}
+  .thread-header .back{font-size:22px;color:var(--text-secondary);cursor:pointer;padding:4px;line-height:1;}
+  .thread-header .info{flex:1;min-width:0;}
   .thread-header .info .gname{font-size:15px;font-weight:600;}
-  .thread-header .info .gmeta{font-size:11px;color:var(--text-muted);}
-  .messages{flex:1;overflow-y:auto;padding:14px 12px;display:flex;flex-direction:column;gap:10px;}
-  .msg{max-width:82%;}
+  .thread-header .info .gmeta{font-size:11.5px;color:var(--text-muted);}
+  .messages{flex:1;overflow-y:auto;padding:14px 10px;display:flex;flex-direction:column;gap:3px;background:
+    radial-gradient(circle at 15% 20%, rgba(62,142,222,0.05) 0, transparent 45%),
+    radial-gradient(circle at 85% 70%, rgba(62,142,222,0.04) 0, transparent 45%),
+    var(--bg-app);}
+  .msg{max-width:78%;margin-top:8px;}
   .msg.mine{align-self:flex-end;}
-  .msg .bubble{background:var(--bg-card);border-radius:14px;padding:10px 13px;font-size:14px;line-height:1.45;}
-  .msg.mine .bubble{background:var(--bg-raised);}
-  .msg .sender{font-size:11px;color:var(--accent);font-weight:600;margin-bottom:3px;}
-  .msg .time{font-size:10px;color:var(--text-muted);margin-top:4px;text-align:right;}
+  .msg .bubble{background:var(--bg-card-2);border-radius:14px 14px 14px 3px;padding:9px 12px;font-size:14.5px;line-height:1.42;box-shadow:0 1px 4px rgba(0,0,0,0.15);}
+  .msg.mine .bubble{background:rgba(62,142,222,0.16);border:1px solid rgba(62,142,222,0.25);border-radius:14px 14px 3px 14px;}
+  .msg .sender{font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:3px;}
+  .msg .time{font-size:10px;color:var(--text-muted);margin-top:3px;text-align:right;display:flex;justify-content:flex-end;align-items:center;gap:3px;}
+  .msg .tick{color:var(--accent);font-size:11px;}
+  .msg .bubble img{max-width:100%;border-radius:9px;display:block;margin-bottom:4px;cursor:pointer;}
   .msg.system .bubble{background:transparent;color:var(--text-muted);font-size:12px;text-align:center;padding:4px;}
 
   /* task card inside chat */
@@ -102,8 +110,18 @@
   .status-pill.completed{background:var(--success-dark);color:#D6F2D4;}
   .status-pill.assigned,.status-pill.in_progress{background:var(--bg-raised);color:var(--text-secondary);}
 
-  .composer{display:flex;align-items:flex-end;gap:8px;padding:10px 12px;border-top:1px solid var(--border);flex-shrink:0;}
-  .composer textarea{flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:18px;padding:10px 14px;color:var(--text-primary);font-size:14px;resize:none;max-height:90px;outline:none;font-family:inherit;}
+  .composer{display:flex;align-items:flex-end;gap:8px;padding:8px 10px;background:var(--bg-card-2);border-top:1px solid var(--border);flex-shrink:0;padding-bottom:calc(8px + env(safe-area-inset-bottom));}
+  .composer-pill{flex:1;display:flex;align-items:flex-end;background:var(--bg-app);border:1px solid var(--border);border-radius:22px;padding:4px 6px 4px 14px;}
+  .composer-pill textarea{flex:1;background:transparent;border:none;padding:9px 4px;color:var(--text-primary);font-size:14.5px;resize:none;max-height:90px;outline:none;font-family:inherit;}
+  .composer-pill .icon-btn{width:34px;height:34px;background:transparent;border:none;font-size:17px;}
+  .photo-preview-strip{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg-card-2);border-top:1px solid var(--border);}
+  .photo-preview-strip img{width:52px;height:52px;object-fit:cover;border-radius:10px;}
+  .photo-preview-strip .pp-remove{font-size:12px;color:var(--danger);cursor:pointer;padding:6px;}
+  .photo-preview-strip .pp-label{font-size:12px;color:var(--text-secondary);flex:1;}
+  #image-viewer{display:none;position:fixed;inset:0;background:rgba(6,9,14,0.95);z-index:60;align-items:center;justify-content:center;flex-direction:column;}
+  #image-viewer.open{display:flex;}
+  #image-viewer img{max-width:92%;max-height:80%;border-radius:10px;box-shadow:0 10px 40px rgba(0,0,0,0.5);}
+  #image-viewer .iv-close{position:absolute;top:calc(16px + env(safe-area-inset-top));right:18px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.12);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;}
   .icon-btn{width:38px;height:38px;border-radius:50%;background:var(--bg-card-2);border:1px solid var(--border);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-size:14px;font-weight:600;transition:transform 0.1s ease;}
   .icon-btn:active{transform:scale(0.92);}
   .icon-btn.send{background:var(--accent);color:var(--accent-text);border:none;font-size:16px;box-shadow:0 2px 8px rgba(62,142,222,0.3);}
@@ -146,6 +164,45 @@
   .filter-row{display:flex;gap:8px;padding:0 16px 12px;overflow-x:auto;}
 
   ::-webkit-scrollbar{width:0;height:0;}
+
+  /* ---------- Desktop sidebar / responsive layout ---------- */
+  #sidebar{display:none;width:230px;flex-direction:column;background:var(--bg-card-2);border-right:1px solid var(--border);flex-shrink:0;padding:8px 0;}
+  .sidebar-brand{display:flex;align-items:center;gap:10px;padding:14px 18px 22px;}
+  .sidebar-nav-item{display:flex;align-items:center;gap:10px;padding:12px 18px;color:var(--text-secondary);cursor:pointer;font-size:14px;font-weight:500;border-right:3px solid transparent;}
+  .sidebar-nav-item:hover{color:var(--text-primary);}
+  .sidebar-nav-item.active{color:var(--accent);background:rgba(62,142,222,0.08);border-right-color:var(--accent);}
+  .sidebar-nav-item .ic{font-size:16px;width:18px;text-align:center;}
+  #main-col{display:flex;flex-direction:column;flex:1;min-width:0;height:100%;}
+
+  @media (min-width:860px){
+    #app{max-width:1180px;flex-direction:row;}
+    #sidebar{display:flex;}
+    #main-col{border-left:1px solid var(--border);}
+    .bottomnav{display:none !important;}
+    .screen{padding-bottom:0 !important;}
+  }
+
+  /* ---------- Owner console ---------- */
+  .console-tabs{display:flex;gap:4px;padding:10px 14px 0;border-bottom:1px solid var(--border);overflow-x:auto;flex-shrink:0;}
+  .ctab{padding:10px 14px;font-size:13px;font-weight:600;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;}
+  .ctab.active{color:var(--accent);border-bottom-color:var(--accent);}
+  .console-pane{flex:1;overflow-y:auto;padding:16px;}
+  .cs-section{margin-bottom:22px;}
+  .cs-heading{font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;font-weight:600;}
+  .cs-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;}
+  .cs-row{display:flex;align-items:center;gap:10px;justify-content:space-between;flex-wrap:wrap;}
+  .cs-form{display:grid;grid-template-columns:1fr 1fr;gap:10px;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:16px;}
+  .cs-form.single{grid-template-columns:1fr;}
+  .cs-form label{font-size:12px;color:var(--text-secondary);display:block;margin-bottom:6px;}
+  .cs-form input,.cs-form select,.cs-form textarea{width:100%;background:var(--bg-card-2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;color:var(--text-primary);font-size:14px;font-family:inherit;}
+  .cs-form .full{grid-column:1/-1;}
+  .role-badge{font-size:10px;font-weight:700;padding:3px 9px;border-radius:6px;letter-spacing:0.3px;}
+  .role-badge.pm{background:rgba(62,142,222,0.18);color:#8FC1F2;}
+  .role-badge.staff{background:var(--bg-raised);color:var(--text-secondary);}
+  .role-badge.owner{background:rgba(95,182,92,0.18);color:#9BDD98;}
+  .role-badge.pending{background:rgba(226,87,76,0.15);color:#F0A099;}
+  @media (min-width:640px){ .cs-form.responsive-1col{grid-template-columns:1fr;} }
+  @media (max-width:640px){ .cs-form{grid-template-columns:1fr;} }
 </style>
 </head>
 <body>
@@ -173,6 +230,15 @@
     <div id="login-status"></div>
   </div>
 
+  <!-- DESKTOP SIDEBAR (hidden on mobile) -->
+  <div id="sidebar">
+    <div class="sidebar-brand"><div class="logo" style="width:32px;height:32px;">🦅</div><div><div class="title" style="font-size:15px;">EAGLES</div><div class="sub" id="sidebar-user-name" style="font-size:10.5px;">—</div></div></div>
+    <div class="sidebar-nav-item active" data-nav="chats"><span class="ic">💬</span>Chats</div>
+    <div class="sidebar-nav-item" data-nav="dashboard"><span class="ic">📊</span>Dashboard</div>
+    <div class="sidebar-nav-item" data-nav="console" id="sidebar-console" style="display:none;"><span class="ic">🛠️</span>Owner Console</div>
+  </div>
+
+  <div id="main-col">
   <!-- CHATS LIST -->
   <div class="screen" id="screen-chats">
     <div class="brandbar">
@@ -197,9 +263,18 @@
       <div class="icon-btn" id="btn-manage-members" style="display:none;margin-left:auto;">👥</div>
     </div>
     <div class="messages" id="messages-list"></div>
+    <div class="photo-preview-strip" id="photo-preview-strip" style="display:none;">
+      <img id="photo-preview-img" src="">
+      <div class="pp-label">Photo ready to send</div>
+      <div class="pp-remove" id="btn-remove-photo">Remove</div>
+    </div>
     <div class="composer">
       <div class="icon-btn task" id="btn-open-task-sheet" style="display:none;">＋T</div>
-      <textarea id="input-message" rows="1" placeholder="Message"></textarea>
+      <div class="composer-pill">
+        <div class="icon-btn" id="btn-attach-photo">📷</div>
+        <textarea id="input-message" rows="1" placeholder="Message"></textarea>
+      </div>
+      <input type="file" id="chat-photo-input" accept="image/*" capture="environment" style="display:none;">
       <div class="icon-btn send" id="btn-send-message">➤</div>
     </div>
   </div>
@@ -221,11 +296,28 @@
     <div id="dash-list" style="flex:1;overflow-y:auto;"></div>
   </div>
 
+  <!-- OWNER CONSOLE (web-first) -->
+  <div class="screen" id="screen-console">
+    <div class="brandbar"><div class="logo">🦅</div><div><div class="title">Owner Console</div><div class="sub">Users, projects, tasks &amp; progress</div></div></div>
+    <div class="console-tabs" id="console-tabs">
+      <div class="ctab active" data-ctab="users">Users</div>
+      <div class="ctab" data-ctab="projects">Projects &amp; Roles</div>
+      <div class="ctab" data-ctab="assign">Assign Task</div>
+      <div class="ctab" data-ctab="progress">Progress</div>
+    </div>
+    <div class="console-pane" id="cpane-users"></div>
+    <div class="console-pane" id="cpane-projects" style="display:none;"></div>
+    <div class="console-pane" id="cpane-assign" style="display:none;"></div>
+    <div class="console-pane" id="cpane-progress" style="display:none;"></div>
+  </div>
+
   <!-- BOTTOM NAV -->
   <div class="bottomnav" id="bottomnav" style="display:none;">
     <div class="navbtn active" data-nav="chats"><span class="ic">💬</span>Chats</div>
     <div class="navbtn" data-nav="dashboard" id="nav-dashboard"><span class="ic">📊</span>Dashboard</div>
+    <div class="navbtn" data-nav="console" id="nav-console" style="display:none;"><span class="ic">🛠️</span>Console</div>
   </div>
+  </div><!-- /main-col -->
 
   <!-- SHEET: create task -->
   <div class="sheet-backdrop" id="task-sheet-backdrop"></div>
@@ -263,7 +355,13 @@
         <input type="range" id="progress-slider" min="0" max="100" value="0" step="5">
       </div>
       <div class="field"><label>Note (optional)</label><input type="text" id="progress-note" placeholder="Any update or blocker"></div>
-      <button class="btn" id="btn-submit-progress">Save update</button>
+      <div class="field">
+        <label>Photo (optional)</label>
+        <div id="progress-photo-preview" style="display:none;margin-bottom:8px;"><img src="" id="progress-photo-img" style="width:100%;max-height:180px;object-fit:cover;border-radius:10px;"></div>
+        <button class="btn secondary" id="btn-attach-progress-photo" style="margin-top:0;">📷 Add site photo</button>
+        <input type="file" id="progress-photo-input" accept="image/*" capture="environment" style="display:none;">
+      </div>
+      <button class="btn" id="btn-submit-progress" style="margin-top:8px;">Save update</button>
     </div>
   </div>
 
@@ -294,6 +392,12 @@
       <div style="font-size:12px;color:var(--text-muted);margin:16px 0 6px;text-transform:uppercase;letter-spacing:0.5px;">Add more</div>
       <div id="members-add-list" style="display:flex;flex-direction:column;gap:8px;"></div>
     </div>
+  </div>
+
+  <!-- FULLSCREEN IMAGE VIEWER -->
+  <div id="image-viewer">
+    <div class="iv-close" id="btn-close-viewer">✕</div>
+    <img id="image-viewer-img" src="">
   </div>
 
 </div>
@@ -344,18 +448,33 @@ async function loadMe(phoneEntered){
     if (userErr || !user) { $('login-status').textContent = 'Session error - please try again'; return; }
     let { data: profile, error: profErr } = await sb.from('ea_users').select('*').eq('id', user.id).single();
     if (!profile) {
-      // first login - create profile as staff by default; promote owner/pm manually via SQL
+      // Check if the owner pre-added this phone number to any project
+      const { data: pending } = await sb.from('ea_pending_members').select('*').eq('phone', phoneEntered || '');
+      const nameFromPending = (pending && pending[0]) ? pending[0].name : 'New user';
+
       const { data: created, error: createErr } = await sb.from('ea_users').insert({
-        id: user.id, name: 'New user', phone: phoneEntered || user.phone, role: 'staff'
+        id: user.id, name: nameFromPending, phone: phoneEntered || user.phone, role: 'staff'
       }).select().single();
       if (createErr) { $('login-status').textContent = 'Could not create profile: ' + createErr.message; return; }
       profile = created;
+
+      if (pending && pending.length) {
+        await sb.from('ea_conversation_members').insert(
+          pending.map(p => ({ conversation_id: p.conversation_id, user_id: user.id, added_by: p.added_by, role: p.role }))
+        );
+        await sb.from('ea_pending_members').delete().eq('phone', phoneEntered || '');
+      }
     }
     me = profile;
     $('header-user-name').textContent = me.name + ' · ' + me.role;
+    $('sidebar-user-name').textContent = me.name + ' · ' + me.role;
     if (me.role === 'owner' || me.role === 'pm') {
       $('btn-open-task-sheet').style.display = 'flex';
       $('btn-open-group-sheet').style.display = 'flex';
+    }
+    if (me.role === 'owner') {
+      $('nav-console').style.display = 'block';
+      $('sidebar-console').style.display = 'flex';
     }
     $('bottomnav').style.display = 'flex';
     show('screen-chats');
@@ -446,11 +565,50 @@ async function renderMessage(m){
   } else if (m.msg_type === 'system') {
     wrap.className = 'msg system';
     wrap.innerHTML = `<div class="bubble">${m.content}</div>`;
+  } else if (m.msg_type === 'image') {
+    wrap.className = 'msg' + (m.sender_id===me.id ? ' mine':'');
+    wrap.innerHTML = `${m.sender_id!==me.id?`<div class="sender">${m.ea_users?.name||''}</div>`:''}<div class="bubble"><img src="${m.image_url}" alt="Site photo">${m.content?`<div>${m.content}</div>`:''}<div class="time">${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}${m.sender_id===me.id?' <span class="tick">✓</span>':''}</div></div>`;
+    wrap.querySelector('img').onclick = () => openImageViewer(m.image_url);
   } else {
     wrap.className = 'msg' + (m.sender_id===me.id ? ' mine':'');
-    wrap.innerHTML = `${m.sender_id!==me.id?`<div class="sender">${m.ea_users?.name||''}</div>`:''}<div class="bubble">${m.content||''}</div><div class="time">${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>`;
+    wrap.innerHTML = `${m.sender_id!==me.id?`<div class="sender">${m.ea_users?.name||''}</div>`:''}<div class="bubble">${m.content||''}<div class="time">${new Date(m.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}${m.sender_id===me.id?' <span class="tick">✓</span>':''}</div></div>`;
   }
   $('messages-list').appendChild(wrap);
+}
+
+function openImageViewer(url){
+  $('image-viewer-img').src = url;
+  $('image-viewer').classList.add('open');
+}
+$('btn-close-viewer').onclick = () => $('image-viewer').classList.remove('open');
+$('image-viewer').onclick = (e) => { if (e.target.id === 'image-viewer') $('image-viewer').classList.remove('open'); };
+
+/* ---------------- PHOTO ATTACH (chat) ---------------- */
+let pendingPhotoFile = null;
+
+$('btn-attach-photo').onclick = () => $('chat-photo-input').click();
+
+$('chat-photo-input').onchange = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  pendingPhotoFile = file;
+  $('photo-preview-img').src = URL.createObjectURL(file);
+  $('photo-preview-strip').style.display = 'flex';
+};
+
+$('btn-remove-photo').onclick = () => {
+  pendingPhotoFile = null;
+  $('chat-photo-input').value = '';
+  $('photo-preview-strip').style.display = 'none';
+};
+
+async function uploadPhoto(file, conversationId){
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+  const path = `${conversationId}/${crypto.randomUUID()}.${ext}`;
+  const { error } = await sb.storage.from('eagles-photos').upload(path, file, { upsert: false });
+  if (error) throw error;
+  const { data } = sb.storage.from('eagles-photos').getPublicUrl(path);
+  return data.publicUrl;
 }
 
 function taskCardHTML(task){
@@ -472,9 +630,24 @@ function taskCardHTML(task){
 /* ---------------- SEND MESSAGE ---------------- */
 $('btn-send-message').onclick = async () => {
   const text = $('input-message').value.trim();
-  if (!text || !activeConversation) return;
-  $('input-message').value = '';
-  await sb.from('ea_messages').insert({ conversation_id: activeConversation.id, sender_id: me.id, msg_type:'text', content: text });
+  if (!activeConversation || (!text && !pendingPhotoFile)) return;
+  $('btn-send-message').style.opacity = '0.5';
+  try {
+    if (pendingPhotoFile) {
+      const url = await uploadPhoto(pendingPhotoFile, activeConversation.id);
+      await sb.from('ea_messages').insert({ conversation_id: activeConversation.id, sender_id: me.id, msg_type:'image', image_url: url, content: text || null });
+      pendingPhotoFile = null;
+      $('chat-photo-input').value = '';
+      $('photo-preview-strip').style.display = 'none';
+    } else {
+      await sb.from('ea_messages').insert({ conversation_id: activeConversation.id, sender_id: me.id, msg_type:'text', content: text });
+    }
+    $('input-message').value = '';
+  } catch (e) {
+    alert('Could not send: ' + (e.message || e));
+  } finally {
+    $('btn-send-message').style.opacity = '1';
+  }
 };
 
 /* ---------------- TASK SHEET ---------------- */
@@ -524,6 +697,8 @@ $('btn-create-task').onclick = async () => {
 };
 
 /* ---------------- PROGRESS SHEET ---------------- */
+let pendingProgressPhoto = null;
+
 function openProgressSheet(task){
   activeTaskForProgress = task;
   const mine = (task.ea_task_assignees||[]).find(a=>a.user_id===me.id);
@@ -531,8 +706,20 @@ function openProgressSheet(task){
   $('progress-sheet-title').textContent = task.title;
   $('progress-slider').value = pct;
   $('progress-val').textContent = pct + '%';
+  pendingProgressPhoto = null;
+  $('progress-photo-preview').style.display = 'none';
+  $('progress-photo-input').value = '';
   toggleSheet('progress-sheet', true);
 }
+
+$('btn-attach-progress-photo').onclick = () => $('progress-photo-input').click();
+$('progress-photo-input').onchange = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  pendingProgressPhoto = file;
+  $('progress-photo-img').src = URL.createObjectURL(file);
+  $('progress-photo-preview').style.display = 'block';
+};
 
 $('progress-slider').oninput = (e) => { $('progress-val').textContent = e.target.value + '%'; };
 
@@ -540,12 +727,31 @@ $('btn-submit-progress').onclick = async () => {
   const pct = parseInt($('progress-slider').value, 10);
   const note = $('progress-note').value.trim();
   const status = pct >= 100 ? 'completed' : (pct > 0 ? 'in_progress' : 'assigned');
-  await sb.from('ea_task_assignees').update({ progress_pct: pct, status, updated_at: new Date().toISOString(), completed_at: pct>=100?new Date().toISOString():null })
-    .eq('task_id', activeTaskForProgress.id).eq('user_id', me.id);
-  await sb.from('ea_task_updates').insert({ task_id: activeTaskForProgress.id, user_id: me.id, progress_pct: pct, note: note || null });
-  await sb.from('ea_messages').insert({ conversation_id: activeConversation.id, sender_id: me.id, msg_type:'system', content: `${me.name} updated "${activeTaskForProgress.title}" to ${pct}%${note?': '+note:''}` });
-  $('progress-note').value = '';
-  toggleSheet('progress-sheet', false);
+  $('btn-submit-progress').disabled = true;
+  try {
+    let photoUrl = null;
+    if (pendingProgressPhoto) {
+      photoUrl = await uploadPhoto(pendingProgressPhoto, activeConversation.id);
+    }
+    await sb.from('ea_task_assignees').update({ progress_pct: pct, status, updated_at: new Date().toISOString(), completed_at: pct>=100?new Date().toISOString():null })
+      .eq('task_id', activeTaskForProgress.id).eq('user_id', me.id);
+    await sb.from('ea_task_updates').insert({ task_id: activeTaskForProgress.id, user_id: me.id, progress_pct: pct, note: note || null, photo_url: photoUrl });
+
+    const summary = `${me.name} updated "${activeTaskForProgress.title}" to ${pct}%${note?': '+note:''}`;
+    if (photoUrl) {
+      await sb.from('ea_messages').insert({ conversation_id: activeConversation.id, sender_id: me.id, msg_type:'image', image_url: photoUrl, content: summary });
+    } else {
+      await sb.from('ea_messages').insert({ conversation_id: activeConversation.id, sender_id: me.id, msg_type:'system', content: summary });
+    }
+    $('progress-note').value = '';
+    pendingProgressPhoto = null;
+    $('progress-photo-preview').style.display = 'none';
+    toggleSheet('progress-sheet', false);
+  } catch (e) {
+    alert('Could not save update: ' + (e.message || e));
+  } finally {
+    $('btn-submit-progress').disabled = false;
+  }
 };
 
 /* ---------------- NEW GROUP ---------------- */
@@ -636,14 +842,16 @@ async function refreshMembersSheet(){
   });
 }
 
-/* ---------------- BOTTOM NAV ---------------- */
+/* ---------------- NAV (sidebar + bottomnav) ---------------- */
+function goNav(target){
+  document.querySelectorAll('.navbtn, .sidebar-nav-item').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll(`[data-nav="${target}"]`).forEach(x=>x.classList.add('active'));
+  if (target==='chats') show('screen-chats');
+  if (target==='dashboard') { show('screen-dashboard'); loadDashboard(); }
+  if (target==='console') { show('screen-console'); initConsole(); }
+}
 document.querySelectorAll('[data-nav]').forEach(el=>{
-  el.onclick = () => {
-    document.querySelectorAll('.navbtn').forEach(x=>x.classList.remove('active'));
-    el.classList.add('active');
-    if (el.getAttribute('data-nav')==='chats') show('screen-chats');
-    if (el.getAttribute('data-nav')==='dashboard') { show('screen-dashboard'); loadDashboard(); }
-  };
+  el.onclick = () => goNav(el.getAttribute('data-nav'));
 });
 
 async function loadDashboard(){
@@ -671,6 +879,224 @@ async function loadDashboard(){
   $('stat-overdue').textContent = overdue;
   $('stat-done').textContent = done;
   $('dash-list').innerHTML = listHtml.join('') || `<div class="empty-state">No tasks yet.</div>`;
+}
+
+/* ---------------- OWNER CONSOLE ---------------- */
+document.querySelectorAll('#console-tabs .ctab').forEach(el=>{
+  el.onclick = () => {
+    document.querySelectorAll('#console-tabs .ctab').forEach(x=>x.classList.remove('active'));
+    el.classList.add('active');
+    document.querySelectorAll('.console-pane').forEach(p=>p.style.display='none');
+    const tab = el.getAttribute('data-ctab');
+    $('cpane-'+tab).style.display = 'block';
+    if (tab==='users') renderConsoleUsers();
+    if (tab==='projects') renderConsoleProjects();
+    if (tab==='assign') renderConsoleAssign();
+    if (tab==='progress') renderConsoleProgress();
+  };
+});
+function initConsole(){ renderConsoleUsers(); }
+
+async function renderConsoleUsers(){
+  const pane = $('cpane-users');
+  pane.innerHTML = `<div class="cs-heading">Loading…</div>`;
+  const [{data:users}, {data:pending}, {data:projects}] = await Promise.all([
+    sb.from('ea_users').select('*').order('created_at'),
+    sb.from('ea_pending_members').select('*, ea_conversations(name)').order('created_at'),
+    sb.from('ea_conversations').select('id,name').eq('kind','site_group').order('name')
+  ]);
+
+  const activeHtml = (users||[]).map(u=>`
+    <div class="cs-card cs-row">
+      <div><strong>${u.name}</strong><div style="font-size:12px;color:var(--text-muted);">${u.phone||''}</div></div>
+      <span class="role-badge ${u.role}">${u.role.toUpperCase()}</span>
+    </div>`).join('') || `<p style="color:var(--text-muted);font-size:13px;">No one has logged in yet.</p>`;
+
+  const pendingHtml = (pending||[]).map(p=>`
+    <div class="cs-card cs-row">
+      <div><strong>${p.name}</strong><div style="font-size:12px;color:var(--text-muted);">${p.phone} · ${p.ea_conversations?.name||''}</div></div>
+      <span class="role-badge pending">AWAITING LOGIN</span>
+    </div>`).join('') || `<p style="color:var(--text-muted);font-size:13px;">No pending invites.</p>`;
+
+  const projectOptions = (projects||[]).map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+
+  pane.innerHTML = `
+    <div class="cs-section">
+      <div class="cs-heading">Add / pre-register someone</div>
+      <div class="cs-form">
+        <div><label>Name</label><input id="pu-name" placeholder="Full name"></div>
+        <div><label>Phone</label><input id="pu-phone" placeholder="10-digit mobile" maxlength="10"></div>
+        <div><label>Project</label><select id="pu-project">${projectOptions}</select></div>
+        <div><label>Role in this project</label><select id="pu-role"><option value="staff">Staff</option><option value="pm">Project PM</option></select></div>
+        <button class="btn full" id="btn-add-pending" style="margin-top:4px;">Add</button>
+      </div>
+      <p style="font-size:11px;color:var(--text-muted);margin-top:8px;">If they've already logged in, this adds them to the project immediately. If not, it's saved and applied automatically the moment they log in with this phone number.</p>
+    </div>
+    <div class="cs-section"><div class="cs-heading">Active team (${(users||[]).length})</div>${activeHtml}</div>
+    <div class="cs-section"><div class="cs-heading">Pending invites (${(pending||[]).length})</div>${pendingHtml}</div>
+  `;
+
+  $('btn-add-pending').onclick = async () => {
+    const name = $('pu-name').value.trim();
+    const phone = $('pu-phone').value.trim();
+    const projectId = $('pu-project').value;
+    const role = $('pu-role').value;
+    if (!name || phone.length < 10 || !projectId) { alert('Fill in name, 10-digit phone, and project'); return; }
+
+    const { data: existing } = await sb.from('ea_users').select('id').eq('phone', phone).maybeSingle();
+    if (existing) {
+      await sb.from('ea_conversation_members').upsert(
+        { conversation_id: projectId, user_id: existing.id, role, added_by: me.id },
+        { onConflict: 'conversation_id,user_id' }
+      );
+    } else {
+      await sb.from('ea_pending_members').upsert(
+        { phone, name, conversation_id: projectId, role, added_by: me.id },
+        { onConflict: 'phone,conversation_id' }
+      );
+    }
+    $('pu-name').value = ''; $('pu-phone').value = '';
+    renderConsoleUsers();
+  };
+}
+
+async function renderConsoleProjects(){
+  const pane = $('cpane-projects');
+  pane.innerHTML = `<div class="cs-heading">Loading…</div>`;
+  const { data: projects } = await sb.from('ea_conversations').select('*').eq('kind','site_group').order('created_at', {ascending:false});
+
+  let html = `<div class="cs-section"><button class="btn" id="btn-console-new-project">+ New project</button></div>`;
+  for (const proj of (projects||[])) {
+    const { data: mem } = await sb.from('ea_conversation_members').select('user_id, role, ea_users(name, phone)').eq('conversation_id', proj.id);
+    html += `<div class="cs-section">
+      <div class="cs-heading">${proj.name}${proj.site?' · '+proj.site:''}</div>
+      <div class="cs-card">
+        ${(mem||[]).map(m=>`
+          <div class="cs-row" style="padding:8px 0;border-bottom:1px solid var(--border);">
+            <div><strong>${m.ea_users?.name}</strong><div style="font-size:11px;color:var(--text-muted);">${m.ea_users?.phone||''}</div></div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <select class="pr-role-select" data-conv="${proj.id}" data-user="${m.user_id}" style="background:var(--bg-card-2);border:1px solid var(--border);color:var(--text-primary);border-radius:8px;padding:6px 8px;font-size:12px;">
+                <option value="staff" ${m.role==='staff'?'selected':''}>Staff</option>
+                <option value="pm" ${m.role==='pm'?'selected':''}>Project PM</option>
+              </select>
+              <span class="pp-remove" data-remove-conv="${proj.id}" data-remove-user="${m.user_id}" style="cursor:pointer;color:var(--danger);font-size:12px;">Remove</span>
+            </div>
+          </div>`).join('') || '<p style="color:var(--text-muted);font-size:13px;">No members yet.</p>'}
+      </div>
+    </div>`;
+  }
+  pane.innerHTML = html;
+
+  $('btn-console-new-project').onclick = () => $('btn-open-group-sheet').click();
+  pane.querySelectorAll('.pr-role-select').forEach(sel=>{
+    sel.onchange = async () => {
+      await sb.from('ea_conversation_members').update({ role: sel.value })
+        .eq('conversation_id', sel.getAttribute('data-conv')).eq('user_id', sel.getAttribute('data-user'));
+    };
+  });
+  pane.querySelectorAll('[data-remove-conv]').forEach(el=>{
+    el.onclick = async () => {
+      await sb.from('ea_conversation_members').delete()
+        .eq('conversation_id', el.getAttribute('data-remove-conv')).eq('user_id', el.getAttribute('data-remove-user'));
+      renderConsoleProjects();
+    };
+  });
+}
+
+async function renderConsoleAssign(){
+  const pane = $('cpane-assign');
+  const { data: projects } = await sb.from('ea_conversations').select('id,name').eq('kind','site_group').order('name');
+  const projectOptions = (projects||[]).map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+
+  pane.innerHTML = `
+    <div class="cs-form">
+      <div class="full"><label>Project</label><select id="ca-project">${projectOptions}</select></div>
+      <div class="full">
+        <label>Assign to</label>
+        <div class="segmented" style="max-width:280px;">
+          <div class="seg active" data-ca-type="individual">One person</div>
+          <div class="seg" data-ca-type="group">Whole group</div>
+        </div>
+      </div>
+      <div class="full" id="ca-assignee-field"><label>Member</label><select id="ca-assignee"></select></div>
+      <div class="full"><label>Title</label><input id="ca-title" placeholder="e.g. Shutter Block A - column C4"></div>
+      <div class="full"><label>Description (optional)</label><input id="ca-desc" placeholder="Details, spec, location"></div>
+      <div><label>Target quantity (optional)</label><input id="ca-target" placeholder="e.g. 40 sqm"></div>
+      <div><label>Due date</label><input type="date" id="ca-due"></div>
+      <button class="btn full" id="btn-console-assign-task" style="margin-top:6px;">Assign task</button>
+    </div>
+    <div id="ca-status" style="font-size:12px;color:var(--text-muted);margin-top:8px;"></div>
+  `;
+
+  if (!projects || !projects.length) { pane.innerHTML = `<p style="color:var(--text-muted);font-size:13px;">Create a project first, then come back here to assign tasks.</p>`; return; }
+
+  let caType = 'individual';
+  pane.querySelectorAll('[data-ca-type]').forEach(el=>{
+    el.onclick = () => {
+      pane.querySelectorAll('[data-ca-type]').forEach(x=>x.classList.remove('active'));
+      el.classList.add('active');
+      caType = el.getAttribute('data-ca-type');
+      $('ca-assignee-field').style.display = caType==='group' ? 'none' : 'block';
+    };
+  });
+
+  let caMembers = [];
+  async function loadAssigneesFor(projectId){
+    const { data } = await sb.from('ea_conversation_members').select('user_id, ea_users(name)').eq('conversation_id', projectId);
+    $('ca-assignee').innerHTML = (data||[]).map(m=>`<option value="${m.user_id}">${m.ea_users?.name||'Member'}</option>`).join('');
+    return data || [];
+  }
+  caMembers = await loadAssigneesFor(projects[0].id);
+  $('ca-project').onchange = async (e) => { caMembers = await loadAssigneesFor(e.target.value); };
+
+  $('btn-console-assign-task').onclick = async () => {
+    const projectId = $('ca-project').value;
+    const title = $('ca-title').value.trim();
+    if (!projectId || !title) { $('ca-status').textContent = 'Pick a project and enter a title.'; return; }
+    const { data: task, error } = await sb.from('ea_tasks').insert({
+      conversation_id: projectId, title, description: $('ca-desc').value.trim() || null,
+      task_type: caType, target_qty: $('ca-target').value.trim() || null, due_date: $('ca-due').value || null, created_by: me.id
+    }).select().single();
+    if (error) { $('ca-status').textContent = 'Error: ' + error.message; return; }
+    const assignees = caType === 'group' ? caMembers.map(m=>m.user_id) : [$('ca-assignee').value];
+    await sb.from('ea_task_assignees').insert(assignees.map(uid=>({ task_id: task.id, user_id: uid })));
+    await sb.from('ea_messages').insert({ conversation_id: projectId, sender_id: me.id, msg_type:'task_card', task_id: task.id });
+    $('ca-status').textContent = 'Task assigned ✓';
+    $('ca-title').value=''; $('ca-desc').value=''; $('ca-target').value=''; $('ca-due').value='';
+  };
+}
+
+async function renderConsoleProgress(){
+  const pane = $('cpane-progress');
+  pane.innerHTML = `<div class="cs-heading">Loading…</div>`;
+  const { data: tasks } = await sb.from('ea_tasks').select('*, ea_conversations(name), ea_task_assignees(*, ea_users(name))').eq('status','active').order('created_at', {ascending:false});
+
+  const today = new Date();
+  let html = '';
+  (tasks||[]).forEach(t=>{
+    const created = new Date(t.created_at);
+    const due = t.due_date ? new Date(t.due_date) : null;
+    let planned = null;
+    if (due) {
+      const total = due - created;
+      const elapsed = today - created;
+      planned = total > 0 ? Math.max(0, Math.min(100, (elapsed/total)*100)) : 100;
+    }
+    (t.ea_task_assignees||[]).forEach(a=>{
+      const achieved = a.progress_pct;
+      const variance = planned !== null ? Math.round(achieved - planned) : null;
+      html += `<div class="cs-card">
+        <div class="cs-row"><strong style="font-size:13.5px;">${t.title}</strong>${variance!==null?`<span class="role-badge ${variance>=0?'owner':'pending'}">${variance>=0?'+':''}${variance}% ${variance>=0?'ahead':'behind'}</span>`:''}</div>
+        <div style="font-size:11.5px;color:var(--text-muted);margin:3px 0 8px;">${t.ea_conversations?.name||''} · ${a.ea_users?.name||''}</div>
+        <div class="gauge" style="position:relative;">
+          <div class="gauge-fill ${achieved>=100?'done':''}" style="width:${achieved}%"></div>
+          ${planned!==null?`<div style="position:absolute;top:-3px;left:${Math.min(planned,99)}%;width:2px;height:14px;background:#fff;opacity:0.85;"></div>`:''}
+        </div>
+        <div class="gauge-label"><span>Achieved ${achieved}%</span><span>${planned!==null?'Planned '+Math.round(planned)+'%':'No due date set'}</span></div>
+      </div>`;
+    });
+  });
+  pane.innerHTML = html || `<p style="color:var(--text-muted);font-size:13px;">No active tasks.</p>`;
 }
 
 /* ---------------- INIT ---------------- */
