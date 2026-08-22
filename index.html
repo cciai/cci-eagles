@@ -115,6 +115,19 @@
   .period-tab{padding:6px 12px;border-radius:8px;font-size:12px;color:var(--text-secondary);background:var(--bg-card-2);cursor:pointer;}
   .period-tab.active{background:var(--accent);color:var(--accent-text);font-weight:600;}
 
+  /* ---------- Project avatar (header, editable) ---------- */
+  .proj-avatar-wrap{position:relative;flex-shrink:0;cursor:default;}
+  .proj-avatar-wrap.editable{cursor:pointer;}
+  .proj-avatar-edit{position:absolute;bottom:-3px;right:-3px;width:16px;height:16px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:9px;border:2px solid var(--bg-card-2);}
+  .avatar img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+
+  /* ---------- WBS items ---------- */
+  .wbs-item{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:9px;cursor:pointer;}
+  .wbs-item-top{display:flex;justify-content:space-between;align-items:center;gap:8px;}
+  .wbs-item-name{font-size:14px;font-weight:600;}
+  .wbs-item-weight{font-size:10.5px;color:var(--text-muted);background:var(--bg-card-2);border-radius:6px;padding:2px 7px;flex-shrink:0;}
+  .wbs-item-pct{font-size:13px;font-weight:700;color:var(--accent);}
+
   /* ---------- Screens ---------- */
   .screen{flex:1;overflow-y:auto;display:none;-webkit-overflow-scrolling:touch;}
   .screen.active{display:flex;flex-direction:column;animation:fadeIn 0.18s ease;}
@@ -130,8 +143,8 @@
   .field label{font-size:12px;color:var(--text-secondary);display:block;margin-bottom:6px;}
   .field input{width:100%;background:var(--bg-card-2);border:1px solid var(--border);border-radius:11px;padding:13px 14px;color:var(--text-primary);font-size:16px;outline:none;transition:border-color 0.15s ease;}
   .field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);}
-  .btn{width:100%;max-width:320px;background:var(--accent);color:var(--accent-text);border:none;border-radius:11px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;letter-spacing:0.2px;box-shadow:0 4px 14px color-mix(in srgb, var(--accent) 25%, transparent);transition:transform 0.1s ease, box-shadow 0.15s ease;}
-  .btn:active{transform:scale(0.98);}
+  .btn{width:100%;max-width:320px;background:var(--accent);color:var(--accent-text);border:none;border-radius:11px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;letter-spacing:0.2px;transition:opacity 0.15s ease;}
+  .btn:active{opacity:0.75;}
   .btn:disabled{opacity:0.5;box-shadow:none;}
   .btn.secondary{background:transparent;border:1px solid var(--border);color:var(--text-primary);margin-top:8px;box-shadow:none;}
   .btn.small{width:auto;padding:8px 14px;font-size:13px;}
@@ -213,7 +226,7 @@
   .pc-main .preview{font-size:12.5px;color:var(--text-secondary);margin-top:2px;}
 
   /* ---------- Project detail (tasks + chat) ---------- */
-  .thread-header{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-card-2);border-bottom:1px solid var(--border);flex-shrink:0;box-shadow:0 1px 8px rgba(0,0,0,0.15);}
+  .thread-header{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--bg-card-2);border-bottom:1px solid var(--border);flex-shrink:0;}
   .thread-header .back{font-size:22px;color:var(--text-secondary);cursor:pointer;padding:4px;line-height:1;}
   .thread-header .info{flex:1;min-width:0;}
   .thread-header .info .gname{font-size:15px;font-weight:600;}
@@ -229,7 +242,7 @@
     var(--bg-app);}
   .msg{max-width:78%;margin-top:8px;}
   .msg.mine{align-self:flex-end;}
-  .msg .bubble{background:var(--bg-card-2);border-radius:14px 14px 14px 3px;padding:9px 12px;font-size:14.5px;line-height:1.42;box-shadow:0 1px 4px rgba(0,0,0,0.15);}
+  .msg .bubble{background:var(--bg-card-2);border-radius:14px 14px 14px 3px;padding:9px 12px;font-size:14.5px;line-height:1.42;}
   .msg.mine .bubble{background:color-mix(in srgb, var(--accent) 16%, transparent);border:1px solid color-mix(in srgb, var(--accent) 25%, transparent);border-radius:14px 14px 3px 14px;}
   .msg .sender{font-size:11.5px;color:var(--accent);font-weight:600;margin-bottom:3px;}
   .msg .time{font-size:10px;color:var(--text-muted);margin-top:3px;text-align:right;display:flex;justify-content:flex-end;align-items:center;gap:3px;}
@@ -248,7 +261,7 @@
 
   .icon-btn{width:38px;height:38px;border-radius:50%;background:var(--bg-card-2);border:1px solid var(--border);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-size:14px;font-weight:600;transition:transform 0.1s ease;}
   .icon-btn:active{transform:scale(0.92);}
-  .icon-btn.send{background:var(--accent);color:var(--accent-text);border:none;font-size:16px;box-shadow:0 2px 8px color-mix(in srgb, var(--accent) 30%, transparent);}
+  .icon-btn.send{background:var(--accent);color:var(--accent-text);border:none;font-size:16px;}
   .icon-btn.task{background:var(--bg-raised);color:var(--accent);border-color:var(--accent-dark);}
 
   #image-viewer{display:none;position:fixed;inset:0;background:rgba(6,9,14,0.95);z-index:60;align-items:center;justify-content:center;flex-direction:column;}
@@ -259,7 +272,8 @@
   /* ---------- Slide-up sheets ---------- */
   .sheet-backdrop{position:absolute;inset:0;background:rgba(5,9,15,0.6);display:none;z-index:10;backdrop-filter:blur(2px);}
   .sheet-backdrop.open{display:block;animation:fadeIn 0.2s ease;}
-  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg-card);border-radius:22px 22px 0 0;z-index:11;transform:translateY(100%);transition:transform 0.28s cubic-bezier(.32,.72,0,1);max-height:90%;display:flex;flex-direction:column;box-shadow:0 -16px 40px rgba(0,0,0,0.35);}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg-card);border-radius:22px 22px 0 0;z-index:11;transform:translateY(100%);transition:transform 0.28s cubic-bezier(.32,.72,0,1);max-height:90%;display:flex;flex-direction:column;}
+  .sheet.open{box-shadow:0 -8px 24px rgba(0,0,0,0.12);}
   .sheet.open{transform:translateY(0);}
   .sheet-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:10px auto 4px;}
   .sheet-title{font-size:16px;font-weight:600;padding:8px 18px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
@@ -268,7 +282,7 @@
   .sheet-body select{width:100%;background:var(--bg-card-2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;color:var(--text-primary);font-size:14px;}
   .chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
   .chip{border:1px solid var(--border);background:var(--bg-card-2);border-radius:20px;padding:8px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;transition:all 0.12s ease;}
-  .chip.selected{background:var(--accent);border-color:var(--accent);color:var(--accent-text);font-weight:600;box-shadow:0 2px 8px color-mix(in srgb, var(--accent) 30%, transparent);}
+  .chip.selected{background:var(--accent);border-color:var(--accent);color:var(--accent-text);font-weight:600;}
   .segmented{display:flex;background:var(--bg-card-2);border-radius:10px;padding:3px;gap:3px;}
   .segmented .seg{flex:1;text-align:center;padding:9px;border-radius:8px;font-size:13px;color:var(--text-secondary);cursor:pointer;}
   .segmented .seg.active{background:var(--bg-raised);color:var(--accent);font-weight:600;}
@@ -370,7 +384,7 @@
   .qa-chip{border:1px solid var(--border);background:var(--bg-card-2);border-radius:14px;padding:6px 11px;font-size:12px;color:var(--text-secondary);cursor:pointer;position:relative;}
   .qa-chip.selected{background:color-mix(in srgb, var(--accent) 18%, transparent);border-color:var(--accent);color:var(--accent);font-weight:600;}
   .qa-send{margin-left:auto;width:32px;height:32px;font-size:14px;}
-  .qa-dropdown{position:absolute;top:calc(100% + 6px);left:0;background:var(--bg-raised);border:1px solid var(--border);border-radius:10px;padding:6px;min-width:150px;max-height:180px;overflow-y:auto;z-index:5;box-shadow:0 6px 20px rgba(0,0,0,0.3);}
+  .qa-dropdown{position:absolute;top:calc(100% + 6px);left:0;background:var(--bg-raised);border:1px solid var(--border);border-radius:10px;padding:6px;min-width:150px;max-height:180px;overflow-y:auto;z-index:5;box-shadow:0 4px 16px rgba(0,0,0,0.15);}
   .qa-dropdown-item{padding:8px 10px;font-size:12.5px;color:var(--text-primary);border-radius:6px;cursor:pointer;white-space:nowrap;}
   .qa-dropdown-item:hover{background:var(--bg-card-2);}
 
@@ -441,10 +455,15 @@
     <div id="projects-list" style="flex:1;overflow-y:auto;"></div>
   </div>
 
-  <!-- PROJECT DETAIL (Tasks + Chat) -->
+  <!-- PROJECT DETAIL (Tasks + Chat + Progress + DLR) -->
   <div class="screen" id="screen-project">
     <div class="thread-header">
-      <div class="back" id="btn-back-to-projects">‹</div>
+      <div class="back" id="btn-back-to-projects"><i class="ti ti-chevron-left"></i></div>
+      <div class="proj-avatar-wrap" id="proj-avatar-wrap">
+        <div class="avatar group" id="proj-header-avatar" style="width:34px;height:34px;font-size:12px;">—</div>
+        <div class="proj-avatar-edit" id="btn-change-project-icon" style="display:none;"><i class="ti ti-camera"></i></div>
+      </div>
+      <input type="file" id="project-icon-input" accept="image/*" style="display:none;">
       <div class="info">
         <div class="gname" id="thread-name">—</div>
         <div class="gmeta" id="thread-meta">—</div>
@@ -454,18 +473,10 @@
     <div class="subtabs">
       <div class="subtab active" data-psub="tasks">Tasks</div>
       <div class="subtab" data-psub="chat">Chat</div>
+      <div class="subtab" data-psub="progress">Progress</div>
+      <div class="subtab" data-psub="dlr">DLR</div>
     </div>
     <div id="pane-project-tasks" style="flex:1;display:flex;flex-direction:column;min-height:0;">
-      <div class="site-progress-card">
-        <div class="spc-top">
-          <span class="spc-title">Site progress</span>
-          <span class="spc-pct" id="site-progress-pct">—</span>
-        </div>
-        <div class="gauge"><div class="gauge-fill" id="site-progress-fill" style="width:0%"></div></div>
-        <div class="spc-meta" id="site-progress-meta">No updates yet</div>
-        <button class="btn secondary" id="btn-update-site-progress" style="margin-top:10px;">Update progress</button>
-        <div class="spc-history" id="site-progress-history"></div>
-      </div>
       <div class="quick-add-card">
         <textarea id="qa-input" rows="1" placeholder="e.g. Shutter Block A - column C4"></textarea>
         <div class="qa-actions-row">
@@ -499,6 +510,42 @@
         </div>
         <input type="file" id="chat-photo-input" accept="image/*" capture="environment" style="display:none;">
         <div class="icon-btn send" id="btn-send-message"><i class="ti ti-send"></i></div>
+      </div>
+    </div>
+    <div id="pane-project-progress" style="flex:1;display:none;flex-direction:column;min-height:0;overflow-y:auto;padding:14px 14px 24px;">
+      <div class="site-progress-card" style="margin:0 0 14px;">
+        <div class="spc-top">
+          <span class="spc-title">Overall site progress (weighted)</span>
+          <span class="spc-pct" id="wbs-overall-pct">0%</span>
+        </div>
+        <div class="gauge"><div class="gauge-fill" id="wbs-overall-fill" style="width:0%"></div></div>
+        <div class="spc-meta" id="wbs-overall-meta">Add WBS items below to start tracking</div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <button class="btn secondary" id="btn-view-wbs-report" style="margin-top:0;"><i class="ti ti-file-report"></i> Report</button>
+          <button class="btn secondary" id="btn-add-wbs-item" style="margin-top:0;display:none;"><i class="ti ti-plus"></i> Add WBS item</button>
+        </div>
+      </div>
+      <div id="wbs-list"></div>
+    </div>
+    <div id="pane-project-dlr" style="flex:1;display:none;flex-direction:column;min-height:0;">
+      <div class="chip-filter-row" style="padding-top:10px;align-items:center;">
+        <input type="date" id="dlr-date-picker" style="background:var(--bg-card-2);border:1px solid var(--border);border-radius:9px;padding:8px 10px;color:var(--text-primary);font-size:13px;">
+        <span style="margin-left:auto;font-size:13px;color:var(--text-secondary);">Total: <strong id="dlr-day-total" style="color:var(--text-primary);">0</strong></span>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:0 14px 14px;">
+        <div class="cs-form" style="grid-template-columns:1fr 90px;margin-bottom:14px;">
+          <div><label>Trade / role</label><input type="text" id="dlr-trade-input" placeholder="e.g. Mason, Helper, Carpenter" list="dlr-trade-presets">
+            <datalist id="dlr-trade-presets">
+              <option value="Mason"><option value="Helper"><option value="Carpenter"><option value="Bar Bender">
+              <option value="Electrician"><option value="Plumber"><option value="Painter"><option value="Fabricator">
+            </datalist>
+          </div>
+          <div><label>Count</label><input type="number" id="dlr-count-input" min="0" placeholder="0"></div>
+          <button class="btn full" id="btn-add-dlr-entry" style="grid-column:1/-1;margin-top:2px;"><i class="ti ti-plus"></i> Add entry</button>
+        </div>
+        <div id="dlr-entries-list"></div>
+        <div class="cs-heading" style="margin-top:20px;">Last 7 days</div>
+        <div id="dlr-history-list"></div>
       </div>
     </div>
   </div>
@@ -637,11 +684,11 @@
     </div>
   </div>
 
-  <!-- SHEET: update site progress -->
+  <!-- SHEET: update WBS item progress -->
   <div class="sheet-backdrop" id="site-progress-sheet-backdrop"></div>
   <div class="sheet" id="site-progress-sheet">
     <div class="sheet-handle"></div>
-    <div class="sheet-title"><span>Update site progress</span><span class="sheet-close" data-close="site-progress-sheet">✕</span></div>
+    <div class="sheet-title"><span id="sp-title">Update progress</span><span class="sheet-close" data-close="site-progress-sheet">✕</span></div>
     <div class="sheet-body">
       <div class="slider-wrap">
         <div class="slider-val" id="sp-slider-val">0%</div>
@@ -653,6 +700,27 @@
       <input type="file" id="sp-photo-input" accept="image/*" capture="environment" style="display:none;">
       <button class="btn" id="btn-submit-site-progress" style="margin-top:12px;">Save</button>
     </div>
+  </div>
+
+  <!-- SHEET: new WBS item -->
+  <div class="sheet-backdrop" id="wbs-item-sheet-backdrop"></div>
+  <div class="sheet" id="wbs-item-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title"><span>New WBS item</span><span class="sheet-close" data-close="wbs-item-sheet">✕</span></div>
+    <div class="sheet-body">
+      <div class="field"><label>Name</label><input type="text" id="wbs-name" placeholder="e.g. Foundation, RCC Frame, Brickwork"></div>
+      <div class="field"><label>Weight % (share of overall site progress)</label><input type="number" id="wbs-weight" min="0" max="100" placeholder="e.g. 20"></div>
+      <p id="wbs-weight-hint" style="font-size:11px;color:var(--text-muted);margin-top:-4px;">Weights across all items should add up to 100% for an accurate overall %.</p>
+      <button class="btn" id="btn-create-wbs-item">Add item</button>
+    </div>
+  </div>
+
+  <!-- SHEET: WBS report -->
+  <div class="sheet-backdrop" id="wbs-report-sheet-backdrop"></div>
+  <div class="sheet" id="wbs-report-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title"><span>Progress report</span><span class="sheet-close" data-close="wbs-report-sheet">✕</span></div>
+    <div class="sheet-body" id="wbs-report-body"></div>
   </div>
 
   <!-- SHEET: new category -->
@@ -835,33 +903,69 @@ $('btn-add-category').onclick = () => {
   openCategorySheet(activeConversation.id, () => renderProjectTasks());
 };
 
-/* ---------------- SITE PROGRESS TRACKER ---------------- */
-async function renderSiteProgress(convId){
-  const { data: updates } = await sb.from('ea_site_progress_updates').select('*, ea_users(name)').eq('conversation_id', convId).order('created_at', {ascending:false}).limit(5);
-  const latest = (updates && updates[0]) || null;
-  const pct = latest ? latest.progress_pct : 0;
-  $('site-progress-pct').textContent = pct + '%';
-  $('site-progress-fill').style.width = pct + '%';
-  $('site-progress-fill').classList.toggle('done', pct >= 100);
-  $('site-progress-meta').textContent = latest
-    ? `Last updated by ${esc(latest.ea_users?.name||'')} · ${new Date(latest.created_at).toLocaleDateString()}`
-    : 'No updates yet — be the first to set it';
-  $('site-progress-history').innerHTML = (updates||[]).map(u=>`
-    <div class="spc-history-item"><span>${esc(u.ea_users?.name||'')} set ${u.progress_pct}%</span><span>${new Date(u.created_at).toLocaleDateString()}</span></div>
-  `).join('');
+/* ---------------- WBS PROGRESS TRACKER ---------------- */
+let activeWbsItem = null;
+
+async function renderWBS(convId){
+  const { data: items } = await sb.from('ea_wbs_items').select('*, ea_wbs_updates(user_id, created_at, ea_users(name))').eq('conversation_id', convId).order('order_index').order('created_at');
+  const list = items || [];
+
+  const totalWeight = list.reduce((s,i)=>s+Number(i.weight_pct),0);
+  const weighted = list.reduce((s,i)=>s+Number(i.weight_pct)*i.progress_pct,0);
+  const overallPct = totalWeight > 0 ? Math.round(weighted/totalWeight) : 0;
+
+  $('wbs-overall-pct').textContent = overallPct + '%';
+  $('wbs-overall-fill').style.width = overallPct + '%';
+  $('wbs-overall-fill').classList.toggle('done', overallPct >= 100);
+  $('wbs-overall-meta').textContent = list.length
+    ? `${list.length} WBS item${list.length>1?'s':''} · weights total ${Math.round(totalWeight)}%${Math.round(totalWeight)!==100?' (should total 100% for an accurate %)':''}`
+    : 'No WBS items yet';
+
+  $('wbs-list').innerHTML = list.length ? list.map(item => `
+    <div class="wbs-item" data-wbs-id="${item.id}">
+      <div class="wbs-item-top">
+        <span class="wbs-item-name">${esc(item.name)}</span>
+        <span class="wbs-item-weight">${item.weight_pct}% weight</span>
+      </div>
+      <div class="gauge"><div class="gauge-fill ${item.progress_pct>=100?'done':''}" style="width:${item.progress_pct}%"></div></div>
+      <div class="gauge-label"><span>${item.progress_pct}% complete</span><span class="wbs-item-pct">Tap to update</span></div>
+    </div>
+  `).join('') : `<div class="empty-state"><div class="big"><i class="ti ti-list-tree"></i></div>No WBS items yet.${(me.role==='owner'||me.role==='pm')?' Tap "Add WBS item" above.':''}</div>`;
+
+  $('wbs-list').querySelectorAll('[data-wbs-id]').forEach(row=>{
+    row.onclick = () => {
+      const item = list.find(i=>i.id===row.getAttribute('data-wbs-id'));
+      openWbsUpdateSheet(item);
+    };
+  });
 }
 
+$('btn-add-wbs-item').onclick = () => {
+  $('wbs-name').value = ''; $('wbs-weight').value = '';
+  toggleSheet('wbs-item-sheet', true);
+};
+$('btn-create-wbs-item').onclick = async () => {
+  const name = $('wbs-name').value.trim();
+  const weight = parseFloat($('wbs-weight').value);
+  if (!name || isNaN(weight) || weight < 0 || weight > 100) { alert('Enter a name and a weight between 0-100'); return; }
+  const { error } = await sb.from('ea_wbs_items').insert({ conversation_id: activeConversation.id, name, weight_pct: weight, created_by: me.id });
+  if (error) { alert('Could not add item: ' + error.message); return; }
+  toggleSheet('wbs-item-sheet', false);
+  await renderWBS(activeConversation.id);
+};
+
 let spPendingPhoto = null;
-$('btn-update-site-progress').onclick = () => {
-  if (!activeConversation) return;
-  $('sp-slider').value = parseInt($('site-progress-pct').textContent) || 0;
-  $('sp-slider-val').textContent = $('sp-slider').value + '%';
+function openWbsUpdateSheet(item){
+  activeWbsItem = item;
+  $('sp-title').textContent = 'Update: ' + item.name;
+  $('sp-slider').value = item.progress_pct;
+  $('sp-slider-val').textContent = item.progress_pct + '%';
   $('sp-note').value = '';
   spPendingPhoto = null;
   $('sp-photo-preview').style.display = 'none';
   $('sp-photo-input').value = '';
   toggleSheet('site-progress-sheet', true);
-};
+}
 $('sp-slider').oninput = (e) => { $('sp-slider-val').textContent = e.target.value + '%'; };
 $('btn-sp-attach-photo').onclick = () => $('sp-photo-input').click();
 $('sp-photo-input').onchange = (e) => {
@@ -871,20 +975,102 @@ $('sp-photo-input').onchange = (e) => {
   $('sp-photo-preview').style.display = 'block';
 };
 $('btn-submit-site-progress').onclick = async () => {
+  if (!activeWbsItem) return;
   const pct = parseInt($('sp-slider').value, 10);
   const note = $('sp-note').value.trim();
   $('btn-submit-site-progress').disabled = true;
   try {
     let photoUrl = null;
     if (spPendingPhoto) photoUrl = await uploadPhoto(spPendingPhoto, activeConversation.id);
-    await sb.from('ea_site_progress_updates').insert({ conversation_id: activeConversation.id, user_id: me.id, progress_pct: pct, note: note || null, photo_url: photoUrl });
-    const summary = `${me.name} updated site progress to ${pct}%${note?': '+note:''}`;
+    await sb.from('ea_wbs_items').update({ progress_pct: pct, updated_at: new Date().toISOString() }).eq('id', activeWbsItem.id);
+    await sb.from('ea_wbs_updates').insert({ wbs_item_id: activeWbsItem.id, user_id: me.id, progress_pct: pct, note: note || null });
+    const summary = `${me.name} updated "${activeWbsItem.name}" to ${pct}%${note?': '+note:''}`;
     if (photoUrl) await sb.from('ea_messages').insert({ conversation_id: activeConversation.id, sender_id: me.id, msg_type:'image', image_url: photoUrl, content: summary });
     else await sb.from('ea_messages').insert({ conversation_id: activeConversation.id, sender_id: me.id, msg_type:'system', content: summary });
     toggleSheet('site-progress-sheet', false);
-    await renderSiteProgress(activeConversation.id);
+    await renderWBS(activeConversation.id);
   } catch (e) { alert('Could not save: ' + (e.message||e)); }
   finally { $('btn-submit-site-progress').disabled = false; }
+};
+
+$('btn-view-wbs-report').onclick = async () => {
+  const { data: items } = await sb.from('ea_wbs_items').select('*').eq('conversation_id', activeConversation.id).order('order_index').order('created_at');
+  const list = items || [];
+  const totalWeight = list.reduce((s,i)=>s+Number(i.weight_pct),0);
+  const weighted = list.reduce((s,i)=>s+Number(i.weight_pct)*i.progress_pct,0);
+  const overallPct = totalWeight > 0 ? Math.round(weighted/totalWeight) : 0;
+  $('wbs-report-body').innerHTML = `
+    <div style="text-align:center;margin-bottom:18px;">
+      <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">${esc(activeConversation.name)}</div>
+      <div style="font-size:40px;font-weight:700;color:var(--accent);margin-top:4px;">${overallPct}%</div>
+      <div style="font-size:12px;color:var(--text-muted);">Overall weighted progress · ${new Date().toLocaleDateString()}</div>
+    </div>
+    ${list.map(i=>`
+      <div style="display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);font-size:13.5px;">
+        <span>${esc(i.name)} <span style="color:var(--text-muted);font-size:11.5px;">(${i.weight_pct}%)</span></span>
+        <strong>${i.progress_pct}%</strong>
+      </div>`).join('') || '<p style="color:var(--text-muted);font-size:13px;">No WBS items yet.</p>'}
+    <button class="btn secondary" id="btn-print-wbs-report" style="margin-top:16px;"><i class="ti ti-printer"></i> Print / Save as PDF</button>
+  `;
+  $('btn-print-wbs-report').onclick = () => window.print();
+  toggleSheet('wbs-report-sheet', true);
+};
+
+/* ---------------- DLR (Daily Labour Report) ---------------- */
+function todayDateInput(){ return new Date().toISOString().slice(0,10); }
+
+async function initDLR(convId){
+  $('dlr-date-picker').value = $('dlr-date-picker').value || todayDateInput();
+  $('dlr-date-picker').onchange = () => renderDLREntries(convId);
+  await renderDLREntries(convId);
+  await renderDLRHistory(convId);
+}
+
+async function renderDLREntries(convId){
+  const date = $('dlr-date-picker').value || todayDateInput();
+  const { data } = await sb.from('ea_dlr_entries').select('*, ea_users(name)').eq('conversation_id', convId).eq('entry_date', date).order('created_at');
+  const rows = data || [];
+  const total = rows.reduce((s,r)=>s+r.headcount,0);
+  $('dlr-day-total').textContent = total;
+  $('dlr-entries-list').innerHTML = rows.length ? rows.map(r => `
+    <div class="cs-card cs-row">
+      <div><strong>${esc(r.trade)}</strong><div style="font-size:11px;color:var(--text-muted);">by ${esc(r.ea_users?.name||'')}</div></div>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:16px;font-weight:700;">${r.headcount}</span>
+        ${(r.created_by===me.id || me.role==='owner' || me.role==='pm') ? `<span class="icon-btn" data-del-dlr="${r.id}" style="width:28px;height:28px;font-size:12px;"><i class="ti ti-trash"></i></span>` : ''}
+      </div>
+    </div>`).join('') : `<p style="font-size:13px;color:var(--text-muted);padding:8px 0;">No entries for this date yet.</p>`;
+  $('dlr-entries-list').querySelectorAll('[data-del-dlr]').forEach(btn=>{
+    btn.onclick = async () => {
+      await sb.from('ea_dlr_entries').delete().eq('id', btn.getAttribute('data-del-dlr'));
+      await renderDLREntries(convId);
+      await renderDLRHistory(convId);
+    };
+  });
+}
+
+async function renderDLRHistory(convId){
+  const since = new Date(); since.setDate(since.getDate()-6);
+  const sinceStr = since.toISOString().slice(0,10);
+  const { data } = await sb.from('ea_dlr_entries').select('entry_date, headcount').eq('conversation_id', convId).gte('entry_date', sinceStr);
+  const byDate = {};
+  (data||[]).forEach(r => { byDate[r.entry_date] = (byDate[r.entry_date]||0) + r.headcount; });
+  const dates = Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
+  $('dlr-history-list').innerHTML = dates.length ? dates.map(d=>`
+    <div class="spc-history-item" style="padding:7px 0;"><span>${d}</span><span><strong>${byDate[d]}</strong> workers</span></div>
+  `).join('') : `<p style="font-size:12px;color:var(--text-muted);">No history yet.</p>`;
+}
+
+$('btn-add-dlr-entry').onclick = async () => {
+  const trade = $('dlr-trade-input').value.trim();
+  const count = parseInt($('dlr-count-input').value, 10);
+  const date = $('dlr-date-picker').value || todayDateInput();
+  if (!trade || isNaN(count) || count < 0) { alert('Enter a trade and a valid count'); return; }
+  const { error } = await sb.from('ea_dlr_entries').insert({ conversation_id: activeConversation.id, entry_date: date, trade, headcount: count, created_by: me.id });
+  if (error) { alert('Could not add entry: ' + error.message); return; }
+  $('dlr-trade-input').value = ''; $('dlr-count-input').value = '';
+  await renderDLREntries(activeConversation.id);
+  await renderDLRHistory(activeConversation.id);
 };
 
 /* ---------------- PERSONAL PROGRESS (Settings) ---------------- */
@@ -1273,7 +1459,7 @@ async function renderProjectsList(){
   if (!conversations.length) { el.innerHTML = `<div class="empty-state"><div class="big"><i class="ti ti-folder"></i></div>No projects yet.</div>`; return; }
   el.innerHTML = conversations.map(c => `
     <div class="project-card" data-conv="${c.id}">
-      <div class="avatar group">${(c.name||'?').slice(0,2).toUpperCase()}</div>
+      <div class="avatar group">${avatarInnerHTML(c.name, c.icon_url)}</div>
       <div class="pc-main"><div class="name">${esc(c.name)}</div><div class="preview">${esc(c.site||'')}</div></div>
     </div>`).join('');
   el.querySelectorAll('[data-conv]').forEach(row=>{
@@ -1282,22 +1468,52 @@ async function renderProjectsList(){
 }
 
 /* ================= PROJECT DETAIL (Tasks + Chat) ================= */
+function avatarInnerHTML(name, iconUrl){
+  if (iconUrl) return `<img src="${iconUrl}" alt="">`;
+  return (name||'?').slice(0,2).toUpperCase();
+}
+
 async function openProject(convId){
   activeConversation = conversations.find(c=>c.id===convId);
   $('thread-name').textContent = activeConversation.name || '';
   $('thread-meta').textContent = activeConversation.site || '';
-  $('btn-manage-members').style.display = (me.role === 'owner' || me.role === 'pm') ? 'flex' : 'none';
+  $('proj-header-avatar').innerHTML = avatarInnerHTML(activeConversation.name, activeConversation.icon_url);
+  const canManage = (me.role === 'owner' || me.role === 'pm');
+  $('btn-manage-members').style.display = canManage ? 'flex' : 'none';
+  $('btn-change-project-icon').style.display = canManage ? 'flex' : 'none';
+  $('proj-avatar-wrap').classList.toggle('editable', canManage);
+  $('btn-add-wbs-item').style.display = canManage ? 'inline-flex' : 'none';
   show('screen-project');
   document.querySelectorAll('.subtab').forEach(x=>x.classList.remove('active'));
   document.querySelector('[data-psub="tasks"]').classList.add('active');
   $('pane-project-tasks').style.display = 'flex';
   $('pane-project-chat').style.display = 'none';
+  $('pane-project-progress').style.display = 'none';
+  $('pane-project-dlr').style.display = 'none';
   await loadMembers(convId);
   resetQuickAdd();
   await renderProjectTasks();
-  await renderSiteProgress(convId);
 }
 $('btn-back-to-projects').onclick = () => { show('screen-projects'); renderProjectsList(); };
+
+$('proj-avatar-wrap').onclick = () => {
+  if (!activeConversation) return;
+  const canManage = (me.role === 'owner' || me.role === 'pm');
+  if (canManage) $('project-icon-input').click();
+};
+$('project-icon-input').onchange = async (e) => {
+  const file = e.target.files[0];
+  if (!file || !activeConversation) return;
+  try {
+    const url = await uploadPhoto(file, activeConversation.id);
+    await sb.from('ea_conversations').update({ icon_url: url }).eq('id', activeConversation.id);
+    activeConversation.icon_url = url;
+    const cached = conversations.find(c=>c.id===activeConversation.id);
+    if (cached) cached.icon_url = url;
+    $('proj-header-avatar').innerHTML = avatarInnerHTML(activeConversation.name, url);
+  } catch (err) { alert('Could not update icon: ' + (err.message||err)); }
+  $('project-icon-input').value = '';
+};
 
 document.querySelectorAll('.subtab').forEach(el=>{
   el.onclick = async () => {
@@ -1306,8 +1522,12 @@ document.querySelectorAll('.subtab').forEach(el=>{
     const sub = el.getAttribute('data-psub');
     $('pane-project-tasks').style.display = sub==='tasks' ? 'flex' : 'none';
     $('pane-project-chat').style.display = sub==='chat' ? 'flex' : 'none';
+    $('pane-project-progress').style.display = sub==='progress' ? 'flex' : 'none';
+    $('pane-project-dlr').style.display = sub==='dlr' ? 'flex' : 'none';
     if (sub==='tasks') await renderProjectTasks();
     if (sub==='chat') { await loadMessages(activeConversation.id); subscribeMessages(activeConversation.id); }
+    if (sub==='progress') await renderWBS(activeConversation.id);
+    if (sub==='dlr') await initDLR(activeConversation.id);
   };
 });
 
