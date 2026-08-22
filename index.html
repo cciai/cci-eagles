@@ -430,7 +430,12 @@
   .switch .knob{position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:#fff;transition:left 0.15s ease;box-shadow:0 1px 3px rgba(0,0,0,0.25);}
   .switch.on .knob{left:20px;}
   .console-link-row{display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:4px;cursor:pointer;}
-  .console-link-row .ti{font-size:18px;color:var(--accent-dark);}
+  .console-link-row .ti{font-size:18px;color:var(--accent-dark);}  @media print{
+    body{background:#fff !important;}
+    #sidebar,.bottomnav,.brandbar,.composer,.quick-add-card,.chip-filter-row,.subtabs,.fab,#btn-submit-dlr-day,#btn-print-dlr,#btn-whatsapp-dlr,#btn-print-wbs-report,#btn-whatsapp-wbs-report,#btn-show-add-trade,#dlr-add-form,.dlr-date-nav,.icon-btn,.thread-header{display:none !important;}
+    #app,#main-col,.screen,.console-pane,#pane-project-dlr,#pane-project-progress{position:static !important;overflow:visible !important;height:auto !important;max-width:none !important;background:#fff !important;color:#000 !important;}
+    .cs-card,.dlr-trade-row,.wbs-item,.info-card,.stat-tile{background:#fff !important;border:1px solid #ccc !important;color:#000 !important;}
+  }
 </style>
 </head>
 <body>
@@ -623,6 +628,10 @@
           <div class="stat-tile"><div class="n" id="dlr-daycount">0</div><div class="l">Days logged</div></div>
         </div>
         <button class="btn gold" id="btn-submit-dlr-day">Submit today's DLR</button>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <button class="btn secondary" id="btn-print-dlr" style="margin-top:0;"><i class="ti ti-printer"></i> Print / PDF</button>
+          <button class="btn secondary" id="btn-whatsapp-dlr" style="margin-top:0;"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button>
+        </div>
         <div id="dlr-submitted-note" style="text-align:center;margin-top:10px;"></div>
         <div class="cs-heading" style="margin-top:22px;">Last 7 days</div>
         <div id="dlr-history-list"></div>
@@ -1028,7 +1037,10 @@ document.querySelectorAll('#screen-tasks .view-toggle .vt').forEach(el=>{
     renderTasksHome();
   };
 });
-$('btn-open-task-sheet-home').onclick = () => openTaskSheet(null);
+$('btn-open-task-sheet-home').onclick = () => {
+  try { openTaskSheet(null); }
+  catch (e) { alert('Could not open task sheet: ' + (e.message||e)); }
+};
 
 async function fetchAllMyTasks(){
   const ids = conversations.map(c=>c.id);
@@ -1500,7 +1512,9 @@ async function loadAssigneeOptionsFor(convId){
   return data || [];
 }
 $('btn-open-group-sheet').onclick = async () => {
-  const { data } = await sb.from('ea_users').select('id, name, phone, role').neq('id', me.id).order('name');
+ try {
+  const { data, error: fetchErr } = await sb.from('ea_users').select('id, name, phone, role').neq('id', me.id).order('name');
+  if (fetchErr) throw fetchErr;
   const allStaffUsers = data || [];
   const selected = new Set();
   $('group-member-list').innerHTML = allStaffUsers.length
@@ -1523,6 +1537,7 @@ $('btn-open-group-sheet').onclick = async () => {
     openProject(conv.id);
   };
   toggleSheet('group-sheet', true);
+ } catch (e) { alert('Could not open new project sheet: ' + (e.message||e)); }
 };
 
 document.querySelectorAll('[data-tasktype]').forEach(el=>{
@@ -1905,8 +1920,11 @@ async function renderWBS(convId){
   $('wbs-list').querySelectorAll('[data-edit-wbs]').forEach(btn=>{
     btn.onclick = (e) => {
       e.stopPropagation();
-      const item = flatItems.find(i=>i.id===btn.getAttribute('data-edit-wbs'));
-      openWbsEditSheet(item, flatItems);
+      try {
+        const item = flatItems.find(i=>i.id===btn.getAttribute('data-edit-wbs'));
+        if (!item) throw new Error('Item not found - try refreshing the Progress tab');
+        openWbsEditSheet(item, flatItems);
+      } catch (err) { alert('Could not open edit sheet: ' + (err.message||err)); }
     };
   });
 }
@@ -1918,7 +1936,10 @@ function populateWbsParentSelect(items, excludeId){
 }
 
 $('btn-add-wbs-item').onclick = async () => {
-  const { data: items } = await sb.from('ea_wbs_items').select('*').eq('conversation_id', activeConversation.id);
+ try {
+  if (!activeConversation) throw new Error('No active project');
+  const { data: items, error } = await sb.from('ea_wbs_items').select('*').eq('conversation_id', activeConversation.id);
+  if (error) throw error;
   editingWbsItemId = null;
   $('wbs-item-sheet-title').textContent = 'New WBS item';
   $('wbs-name').value = ''; $('wbs-weight').value = ''; $('wbs-parent').value = '';
@@ -1927,6 +1948,7 @@ $('btn-add-wbs-item').onclick = async () => {
   $('btn-create-wbs-item').textContent = 'Add item';
   $('btn-delete-wbs-item').style.display = 'none';
   toggleSheet('wbs-item-sheet', true);
+ } catch (e) { alert('Could not open Add WBS item: ' + (e.message||e)); }
 };
 function openWbsEditSheet(item, allItems){
   editingWbsItemId = item.id;
@@ -2016,7 +2038,10 @@ $('btn-save-target-date').onclick = async () => {
 };
 
 $('btn-view-wbs-report').onclick = async () => {
-  const { data: items } = await sb.from('ea_wbs_items').select('*').eq('conversation_id', activeConversation.id).order('order_index').order('created_at');
+ try {
+  if (!activeConversation) throw new Error('No active project');
+  const { data: items, error } = await sb.from('ea_wbs_items').select('*').eq('conversation_id', activeConversation.id).order('order_index').order('created_at');
+  if (error) throw error;
   const tree = buildWbsTree(items || []);
   const totalWeight = tree.reduce((s,i)=>s+Number(i.weight_pct),0);
   const weighted = tree.reduce((s,i)=>s+Number(i.weight_pct)*i.effectivePct,0);
@@ -2032,10 +2057,19 @@ $('btn-view-wbs-report').onclick = async () => {
         <div style="display:flex;justify-content:space-between;"><span><b>${i.code}</b> ${esc(i.name)} <span style="color:var(--text-muted);font-size:11.5px;">(wt ${i.weight_pct}%)</span></span><strong>${i.effectivePct}%</strong></div>
         ${i.children.map(c=>`<div style="display:flex;justify-content:space-between;padding-left:16px;font-size:12.5px;color:var(--text-secondary);margin-top:4px;"><span>${c.code} ${esc(c.name)}</span><span>${c.progress_pct}%</span></div>`).join('')}
       </div>`).join('') || '<p style="color:var(--text-muted);font-size:13px;">No WBS items yet.</p>'}
-    <button class="btn secondary" id="btn-print-wbs-report" style="margin-top:16px;"><i class="ti ti-printer"></i> Print / Save as PDF</button>
+    <div style="display:flex;gap:8px;margin-top:16px;">
+      <button class="btn secondary" id="btn-print-wbs-report" style="margin-top:0;"><i class="ti ti-printer"></i> Print / PDF</button>
+      <button class="btn secondary" id="btn-whatsapp-wbs-report" style="margin-top:0;"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button>
+    </div>
   `;
   $('btn-print-wbs-report').onclick = () => window.print();
+  $('btn-whatsapp-wbs-report').onclick = () => {
+    let text = `*${activeConversation.name} — Progress Report*\n${new Date().toLocaleDateString()}\n\nOverall: ${overallPct.toFixed(1)}%\n\n`;
+    tree.forEach(i => { text += `${i.code} ${i.name} (wt ${i.weight_pct}%): ${i.effectivePct}%\n`; i.children.forEach(c => { text += `  ${c.code} ${c.name}: ${c.progress_pct}%\n`; }); });
+    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+  };
   toggleSheet('wbs-report-sheet', true);
+ } catch (e) { alert('Could not open report: ' + (e.message||e)); }
 };
 
 /* ================= DLR ================= */
@@ -2126,6 +2160,21 @@ $('btn-submit-dlr-day').onclick = async () => {
   if (error) { alert('Could not submit: ' + error.message); return; }
   await sb.from('ea_messages').insert({ conversation_id: activeConversation.id, sender_id: me.id, msg_type:'system', content: `${me.name} submitted DLR for ${dateStr}` });
   await renderDLR(activeConversation.id);
+};
+
+$('btn-print-dlr').onclick = () => window.print();
+$('btn-whatsapp-dlr').onclick = async () => {
+  try {
+    const dateStr = dlrDateStr(dlrCurrentDate);
+    const { data: entries, error } = await sb.from('ea_dlr_entries').select('trade, subcontractor, headcount').eq('conversation_id', activeConversation.id).eq('entry_date', dateStr).order('created_at');
+    if (error) throw error;
+    const rows = entries || [];
+    const total = rows.reduce((s,r)=>s+r.headcount,0);
+    let text = `*${activeConversation.name} — Daily Labour Report*\n${dlrCurrentDate.toLocaleDateString('en-US',{weekday:'long',day:'numeric',month:'short',year:'numeric'})}\n\n`;
+    rows.forEach(r => { text += `${r.trade}${r.subcontractor?' ('+r.subcontractor+')':''}: ${r.headcount}\n`; });
+    text += `\n*Total on site: ${total}*`;
+    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+  } catch (e) { alert('Could not prepare WhatsApp message: ' + (e.message||e)); }
 };
 
 /* ================= OWNER CONSOLE ================= */
