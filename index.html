@@ -227,8 +227,8 @@
   .msg.mine{align-self:flex-end;}
   .msg .sender{font-size:11.5px;color:var(--accent-dark);font-weight:700;margin-bottom:3px;}
   .msg .sender .role{color:var(--text-muted);font-weight:500;}
-  .msg .bubble{background:var(--bg-card);border:1px solid var(--border);border-radius:4px 12px 12px 3px;padding:10px 13px;font-size:14.5px;line-height:1.42;}
-  .msg.mine .bubble{background:var(--accent);color:var(--accent-text);border-color:var(--accent);border-radius:4px 12px 3px 12px;font-weight:500;}
+  .msg .bubble{background:var(--bg-card);border:1px solid var(--border);border-radius:12px 12px 12px 3px;padding:10px 13px;font-size:14.5px;line-height:1.42;}
+  .msg.mine .bubble{background:var(--accent);color:var(--accent-text);border-color:var(--accent);border-radius:12px 12px 3px 12px;font-weight:500;}
   .msg .time{font-size:10px;color:var(--text-muted);margin-top:3px;text-align:right;display:flex;justify-content:flex-end;align-items:center;gap:3px;}
   .msg.mine .time{color:color-mix(in srgb, var(--accent-text) 60%, transparent);}
   .msg .bubble img{max-width:100%;border-radius:4px;display:block;margin-bottom:4px;cursor:pointer;}
@@ -257,7 +257,7 @@
   /* ---------- Sheets ---------- */
   .sheet-backdrop{position:absolute;inset:0;background:rgba(5,9,15,0.6);display:none;z-index:10;backdrop-filter:blur(2px);}
   .sheet-backdrop.open{display:block;animation:fadeIn 0.2s ease;}
-  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg-card);border-radius:8px 22px 0 0;z-index:11;transform:translateY(100%);transition:transform 0.28s cubic-bezier(.32,.72,0,1);max-height:90%;display:flex;flex-direction:column;}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg-card);border-radius:16px 16px 0 0;z-index:11;transform:translateY(100%);transition:transform 0.28s cubic-bezier(.32,.72,0,1);max-height:90%;display:flex;flex-direction:column;}
   .sheet.open{box-shadow:0 -8px 24px rgba(0,0,0,0.16);}
   .sheet-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:10px auto 4px;}
   .sheet-title{font-size:16px;font-weight:700;padding:8px 18px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-family:var(--font-display);letter-spacing:0.4px;}
@@ -430,11 +430,23 @@
   .switch .knob{position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:#fff;transition:left 0.15s ease;box-shadow:0 1px 3px rgba(0,0,0,0.25);}
   .switch.on .knob{left:20px;}
   .console-link-row{display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:4px;cursor:pointer;}
-  .console-link-row .ti{font-size:18px;color:var(--accent-dark);}  @media print{
-    body{background:#fff !important;}
-    #sidebar,.bottomnav,.brandbar,.composer,.quick-add-card,.chip-filter-row,.subtabs,.fab,#btn-submit-dlr-day,#btn-print-dlr,#btn-whatsapp-dlr,#btn-print-wbs-report,#btn-whatsapp-wbs-report,#btn-show-add-trade,#dlr-add-form,.dlr-date-nav,.icon-btn,.thread-header{display:none !important;}
-    #app,#main-col,.screen,.console-pane,#pane-project-dlr,#pane-project-progress{position:static !important;overflow:visible !important;height:auto !important;max-width:none !important;background:#fff !important;color:#000 !important;}
-    .cs-card,.dlr-trade-row,.wbs-item,.info-card,.stat-tile{background:#fff !important;border:1px solid #ccc !important;color:#000 !important;}
+  .console-link-row .ti{font-size:18px;color:var(--accent-dark);}
+  #print-report-area{display:none;}
+  @media print{
+    body *{visibility:hidden;}
+    #print-report-area, #print-report-area *{visibility:visible;}
+    #print-report-area{display:block !important;position:absolute;top:0;left:0;width:100%;padding:24px;background:#fff;color:#111;font-family:var(--font-body);}
+    .pr-header{display:flex;align-items:center;gap:14px;border-bottom:3px solid #16243a;padding-bottom:14px;margin-bottom:18px;}
+    .pr-header img{width:52px;height:52px;object-fit:contain;}
+    .pr-header .pr-brand{font-family:var(--font-display);font-size:22px;font-weight:700;letter-spacing:2px;color:#16243a;}
+    .pr-header .pr-sub{font-size:11px;color:#666;}
+    .pr-title{font-size:18px;font-weight:700;margin-bottom:2px;}
+    .pr-meta{font-size:11px;color:#666;margin-bottom:18px;}
+    .pr-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+    .pr-table th{text-align:left;border-bottom:2px solid #16243a;padding:6px 8px;font-size:10.5px;text-transform:uppercase;letter-spacing:0.05em;color:#16243a;}
+    .pr-table td{border-bottom:1px solid #ddd;padding:6px 8px;}
+    .pr-total-row td{font-weight:700;border-top:2px solid #16243a;border-bottom:none;}
+    .pr-footer{margin-top:24px;font-size:10px;color:#999;text-align:center;}
   }
 </style>
 </head>
@@ -872,6 +884,8 @@
     </div>
   </div>
 
+  <div id="print-report-area"></div>
+
   <!-- FULLSCREEN IMAGE VIEWER -->
   <div id="image-viewer">
     <div class="iv-close" id="btn-close-viewer">✕</div>
@@ -1011,6 +1025,25 @@ async function loadConversations(){
     }
   }
   conversations = convs;
+}
+
+function printBrandedReport(title, subtitle, tableHeaders, tableRows, totalRow){
+  const rowsHtml = tableRows.map(r => `<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('');
+  const totalHtml = totalRow ? `<tr class="pr-total-row">${totalRow.map(c=>`<td>${c}</td>`).join('')}</tr>` : '';
+  $('print-report-area').innerHTML = `
+    <div class="pr-header">
+      <img src="icon-512.png" alt="EAGLES">
+      <div><div class="pr-brand">EAGLES</div><div class="pr-sub">Cameo Constructions &amp; Infrastructure</div></div>
+    </div>
+    <div class="pr-title">${esc(title)}</div>
+    <div class="pr-meta">${esc(subtitle)}</div>
+    <table class="pr-table">
+      <thead><tr>${tableHeaders.map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead>
+      <tbody>${rowsHtml}${totalHtml}</tbody>
+    </table>
+    <div class="pr-footer">Generated by EAGLES on ${new Date().toLocaleString()}</div>
+  `;
+  window.print();
 }
 
 function avatarInnerHTML(name, iconUrl){
@@ -2062,7 +2095,19 @@ $('btn-view-wbs-report').onclick = async () => {
       <button class="btn secondary" id="btn-whatsapp-wbs-report" style="margin-top:0;"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button>
     </div>
   `;
-  $('btn-print-wbs-report').onclick = () => window.print();
+  $('btn-print-wbs-report').onclick = () => {
+    const rows = [];
+    tree.forEach(i => {
+      rows.push([`<b>${i.code} ${esc(i.name)}</b>`, i.weight_pct+'%', i.effectivePct+'%']);
+      i.children.forEach(c => rows.push([`&nbsp;&nbsp;${c.code} ${esc(c.name)}`, '—', c.progress_pct+'%']));
+    });
+    printBrandedReport(
+      activeConversation.name + ' — Progress Report',
+      'Weighted completion: ' + overallPct.toFixed(1) + '% · ' + new Date().toLocaleDateString(),
+      ['WBS Item', 'Weight', 'Progress'],
+      rows
+    );
+  };
   $('btn-whatsapp-wbs-report').onclick = () => {
     let text = `*${activeConversation.name} — Progress Report*\n${new Date().toLocaleDateString()}\n\nOverall: ${overallPct.toFixed(1)}%\n\n`;
     tree.forEach(i => { text += `${i.code} ${i.name} (wt ${i.weight_pct}%): ${i.effectivePct}%\n`; i.children.forEach(c => { text += `  ${c.code} ${c.name}: ${c.progress_pct}%\n`; }); });
@@ -2162,7 +2207,22 @@ $('btn-submit-dlr-day').onclick = async () => {
   await renderDLR(activeConversation.id);
 };
 
-$('btn-print-dlr').onclick = () => window.print();
+$('btn-print-dlr').onclick = async () => {
+  try {
+    const dateStr = dlrDateStr(dlrCurrentDate);
+    const { data: entries, error } = await sb.from('ea_dlr_entries').select('trade, subcontractor, headcount').eq('conversation_id', activeConversation.id).eq('entry_date', dateStr).order('created_at');
+    if (error) throw error;
+    const rows = entries || [];
+    const total = rows.reduce((s,r)=>s+r.headcount,0);
+    printBrandedReport(
+      activeConversation.name + ' — Daily Labour Report',
+      dlrCurrentDate.toLocaleDateString('en-US',{weekday:'long',day:'numeric',month:'long',year:'numeric'}),
+      ['Trade', 'Subcontractor', 'Headcount'],
+      rows.map(r=>[esc(r.trade), esc(r.subcontractor||'—'), r.headcount]),
+      ['Total', '', total]
+    );
+  } catch (e) { alert('Could not prepare PDF: ' + (e.message||e)); }
+};
 $('btn-whatsapp-dlr').onclick = async () => {
   try {
     const dateStr = dlrDateStr(dlrCurrentDate);
