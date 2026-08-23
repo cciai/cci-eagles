@@ -23,12 +23,12 @@
 </script>
 <style>
   :root{
-    --navy:#10203F; --navy-2:#16294D;
+    --navy:#16243A; --navy-2:#0D1626;
     --bg-app:#EFEFF1; --bg-card:#FFFFFF; --bg-card-2:#F7F7F8; --bg-raised:#E9E9EC;
-    --accent:#DDA537; --accent-dark:#B8842A; --accent-text:#10203F;
-    --success:#3E8E5A; --success-dark:#2C6B42;
-    --danger:#C0463A; --danger-dark:#96352B;
-    --warning:#DDA537; --warning-dark:#B8842A;
+    --accent:#D9AB52; --accent-dark:#8A6A1F; --accent-text:#16243A;
+    --success:#2D6B45; --success-dark:#1F4D32;
+    --danger:#A8443A; --danger-dark:#7A3129;
+    --warning:#8A6A1F; --warning-dark:#6B5118;
     --text-primary:#10203F; --text-secondary:#5B6472; --text-muted:#8B93A0; --border:#DBDCE0;
     --pri-low:#5D5D60; --pri-medium:#416180; --pri-high:#8A6A1F; --pri-urgent:#B8362A;
     --shadow-card:0 1px 3px rgba(16,32,63,0.08);
@@ -40,10 +40,10 @@
   @media (prefers-color-scheme: dark){
     :root{
       --bg-app:#0A0E19; --bg-card:#141B2E; --bg-card-2:#0F1526; --bg-raised:#1C2438;
-      --accent:#E6B54A; --accent-dark:#C4952F; --accent-text:#10203F;
-      --success:#4CAF6E; --success-dark:#357A4C;
-      --danger:#E0574A; --danger-dark:#A83E32;
-      --warning:#E6B54A; --warning-dark:#C4952F;
+      --accent:#D9AB52; --accent-dark:#8A6A1F; --accent-text:#16243A;
+      --success:#5C9C70; --success-dark:#4A7C59;
+      --danger:#F0776A; --danger-dark:#B8362A;
+      --warning:#D9AB52; --warning-dark:#8A6A1F;
       --text-primary:#F2F3F5; --text-secondary:#A8AFBC; --text-muted:#6B7280; --border:#262E42;
       --pri-low:#8B9099; --pri-medium:#94BCE3; --pri-high:#D9AB52; --pri-urgent:#F0776A;
       --shadow-card:0 1px 3px rgba(0,0,0,0.35);
@@ -51,20 +51,20 @@
   }
   html.theme-force-light{
     --bg-app:#EFEFF1 !important; --bg-card:#FFFFFF !important; --bg-card-2:#F7F7F8 !important; --bg-raised:#E9E9EC !important;
-    --accent:#DDA537 !important; --accent-dark:#B8842A !important; --accent-text:#10203F !important;
-    --success:#3E8E5A !important; --success-dark:#2C6B42 !important;
-    --danger:#C0463A !important; --danger-dark:#96352B !important;
-    --warning:#DDA537 !important; --warning-dark:#B8842A !important;
+    --accent:#D9AB52 !important; --accent-dark:#8A6A1F !important; --accent-text:#16243A !important;
+    --success:#2D6B45 !important; --success-dark:#1F4D32 !important;
+    --danger:#A8443A !important; --danger-dark:#7A3129 !important;
+    --warning:#8A6A1F !important; --warning-dark:#6B5118 !important;
     --text-primary:#10203F !important; --text-secondary:#5B6472 !important; --text-muted:#8B93A0 !important; --border:#DBDCE0 !important;
     --pri-low:#5D5D60 !important; --pri-medium:#416180 !important; --pri-high:#8A6A1F !important; --pri-urgent:#B8362A !important;
     --shadow-card:0 1px 3px rgba(16,32,63,0.08) !important;
   }
   html.theme-force-dark{
     --bg-app:#0A0E19 !important; --bg-card:#141B2E !important; --bg-card-2:#0F1526 !important; --bg-raised:#1C2438 !important;
-    --accent:#E6B54A !important; --accent-dark:#C4952F !important; --accent-text:#10203F !important;
-    --success:#4CAF6E !important; --success-dark:#357A4C !important;
-    --danger:#E0574A !important; --danger-dark:#A83E32 !important;
-    --warning:#E6B54A !important; --warning-dark:#C4952F !important;
+    --accent:#D9AB52 !important; --accent-dark:#8A6A1F !important; --accent-text:#16243A !important;
+    --success:#5C9C70 !important; --success-dark:#4A7C59 !important;
+    --danger:#F0776A !important; --danger-dark:#B8362A !important;
+    --warning:#D9AB52 !important; --warning-dark:#8A6A1F !important;
     --text-primary:#F2F3F5 !important; --text-secondary:#A8AFBC !important; --text-muted:#6B7280 !important; --border:#262E42 !important;
     --pri-low:#8B9099 !important; --pri-medium:#94BCE3 !important; --pri-high:#D9AB52 !important; --pri-urgent:#F0776A !important;
     --shadow-card:0 1px 3px rgba(0,0,0,0.35) !important;
@@ -309,6 +309,15 @@
   .sidebar-nav-item:hover{color:#fff;}
   .sidebar-nav-item.active{color:#fff;background:rgba(255,255,255,0.06);border-right-color:var(--accent);}
   .sidebar-nav-item .ic{font-size:16px;width:18px;text-align:center;}
+  .sidebar-projects-heading{font-family:var(--font-display);font-size:11px;letter-spacing:0.13em;text-transform:uppercase;color:rgba(255,255,255,0.42);padding:22px 20px 8px;}
+  .sidebar-project-item{display:flex;align-items:center;gap:10px;padding:7px 20px;font-size:14px;color:rgba(255,255,255,0.72);cursor:pointer;}
+  .sidebar-project-item:hover{color:#fff;}
+  .sidebar-project-item .dot{width:7px;height:7px;flex-shrink:0;background:#6D8098;}
+  .sidebar-project-item .cnt{margin-left:auto;font-size:12px;color:rgba(255,255,255,0.5);}
+  .sidebar-profile-footer{margin-top:auto;padding:14px 16px 0;border-top:1px solid rgba(255,255,255,0.12);display:flex;align-items:center;gap:10px;cursor:pointer;}
+  .sidebar-avatar{width:32px;height:32px;border-radius:50%;background:var(--accent);color:var(--accent-text);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .sidebar-profile-footer .sp-name{font-size:14px;font-weight:600;color:#fff;}
+  .sidebar-profile-footer .sp-role{font-size:11px;color:rgba(255,255,255,0.5);}
   #main-col{display:flex;flex-direction:column;flex:1;min-width:0;height:100%;}
   @media (min-width:860px){
     #app{max-width:1180px;flex-direction:row;}
@@ -469,11 +478,18 @@
 
   <!-- DESKTOP SIDEBAR -->
   <div id="sidebar">
-    <div class="sidebar-brand"><div class="logo" style="width:30px;height:30px;border-radius:7px;overflow:hidden;"><img src="icon-192.png" style="width:100%;height:100%;object-fit:cover;"></div><div><div style="font-size:15px;font-weight:700;letter-spacing:2px;font-family:'Oswald',sans-serif;">EAGLES</div><div class="sub" id="sidebar-user-name" style="font-size:10.5px;color:rgba(255,255,255,0.55);">—</div></div></div>
+    <div class="sidebar-brand"><div class="logo" style="width:30px;height:30px;border-radius:7px;overflow:hidden;"><img src="icon-192.png" style="width:100%;height:100%;object-fit:cover;"></div><div><div style="font-size:15px;font-weight:700;letter-spacing:2px;font-family:'Barlow Condensed',sans-serif;">EAGLES</div><div class="sub" id="sidebar-user-name" style="font-size:10.5px;color:rgba(255,255,255,0.55);">—</div></div></div>
     <div class="sidebar-nav-item active" data-nav="tasks"><span class="ic"><i class="ti ti-checklist"></i></span>Tasks</div>
     <div class="sidebar-nav-item" data-nav="projects"><span class="ic"><i class="ti ti-folder"></i></span>Projects</div>
     <div class="sidebar-nav-item" data-nav="chatlist"><span class="ic"><i class="ti ti-message-circle"></i></span>Chat</div>
     <div class="sidebar-nav-item" data-nav="me"><span class="ic"><i class="ti ti-user-circle"></i></span>Me</div>
+    <div class="sidebar-projects-heading">Your projects</div>
+    <div id="sidebar-projects-list"></div>
+    <div class="sidebar-profile-footer" id="sidebar-profile-footer">
+      <span class="sidebar-avatar" id="sidebar-avatar-badge">—</span>
+      <div style="flex:1;min-width:0;"><div class="sp-name" id="sidebar-profile-name">—</div><div class="sp-role" id="sidebar-profile-role">—</div></div>
+      <i class="ti ti-settings" style="color:rgba(255,255,255,0.5);font-size:15px;"></i>
+    </div>
   </div>
 
   <div id="main-col">
@@ -544,6 +560,7 @@
         <div class="gname" id="thread-name">—</div>
         <div class="gmeta" id="thread-meta">—</div>
       </div>
+      <div class="icon-btn-hdr" id="btn-project-settings" style="display:none;"><i class="ti ti-settings"></i></div>
       <div class="icon-btn-hdr" id="btn-manage-members" style="display:none;margin-left:auto;"><i class="ti ti-users"></i></div>
     </div>
     <div class="subtabs">
@@ -804,6 +821,20 @@
     </div>
   </div>
 
+  <!-- SHEET: project settings (edit/delete) -->
+  <div class="sheet-backdrop" id="project-settings-sheet-backdrop"></div>
+  <div class="sheet" id="project-settings-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title"><span>Project settings</span><span class="sheet-close" data-close="project-settings-sheet">✕</span></div>
+    <div class="sheet-body">
+      <div class="field"><label>Project name</label><input type="text" id="edit-project-name" placeholder="Project name"></div>
+      <div class="field"><label>Site (optional)</label><input type="text" id="edit-project-site" placeholder="Site name"></div>
+      <button class="btn gold" id="btn-save-project-settings">Save changes</button>
+      <button class="btn secondary" id="btn-delete-project" style="display:none;color:var(--danger);border-color:var(--danger-dark);margin-top:20px;">Delete project</button>
+      <p id="delete-project-hint" style="display:none;font-size:11px;color:var(--text-muted);margin-top:8px;">This permanently deletes every task, message, WBS item, and DLR entry in this project. This cannot be undone.</p>
+    </div>
+  </div>
+
   <!-- SHEET: manage members -->
   <div class="sheet-backdrop" id="members-sheet-backdrop"></div>
   <div class="sheet" id="members-sheet">
@@ -947,6 +978,11 @@ $('btn-login-pin').onclick = async () => {
   const email = phoneToInternalEmail(phone);
   let { data, error } = await sb.auth.signInWithPassword({ email, password: pin });
   if (error) {
+    const { data: approved, error: approvalErr } = await sb.rpc('ea_is_phone_approved', { check_phone: phone });
+    if (approvalErr || !approved) {
+      $('login-status').textContent = 'This phone number has not been approved. Contact the site owner to be added.';
+      return;
+    }
     const su = await sb.auth.signUp({ email, password: pin });
     if (su.error) { $('login-status').textContent = su.error.message; return; }
     data = su.data;
@@ -1025,7 +1061,34 @@ async function loadConversations(){
     }
   }
   conversations = convs;
+  await renderSidebarProjects();
+  renderSidebarProfile();
 }
+
+async function renderSidebarProjects(){
+  const el = $('sidebar-projects-list');
+  if (!el) return;
+  if (!conversations.length) { el.innerHTML = ''; return; }
+  const counts = await Promise.all(conversations.map(async c => {
+    const { count } = await sb.from('ea_tasks').select('id', { count: 'exact', head: true }).eq('conversation_id', c.id).eq('status','active');
+    return count || 0;
+  }));
+  el.innerHTML = conversations.map((c,i) => `
+    <div class="sidebar-project-item" data-conv="${c.id}">
+      <span class="dot" style="background:${activeConversation&&activeConversation.id===c.id?'var(--accent)':'#6D8098'};"></span>${esc(c.name)}<span class="cnt">${counts[i]}</span>
+    </div>`).join('');
+  el.querySelectorAll('[data-conv]').forEach(row=>{
+    row.onclick = () => openProject(row.getAttribute('data-conv'));
+  });
+}
+
+function renderSidebarProfile(){
+  if (!me) return;
+  $('sidebar-avatar-badge').textContent = (me.name||'?').slice(0,2).toUpperCase();
+  $('sidebar-profile-name').textContent = me.name;
+  $('sidebar-profile-role').textContent = me.role==='owner'?'Owner':me.role==='pm'?'Project PM':'Staff';
+}
+$('sidebar-profile-footer').onclick = () => goNav('me');
 
 function printBrandedReport(title, subtitle, tableHeaders, tableRows, totalRow){
   const rowsHtml = tableRows.map(r => `<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('');
@@ -1269,11 +1332,13 @@ async function renderChatList(){
 /* ================= PROJECT DETAIL ================= */
 async function openProject(convId){
   activeConversation = conversations.find(c=>c.id===convId);
+  renderSidebarProjects();
   $('thread-name').textContent = activeConversation.name || '';
   $('thread-meta').textContent = activeConversation.site || '';
   $('proj-header-avatar').innerHTML = avatarInnerHTML(activeConversation.name, activeConversation.icon_url);
   const canManage = (me.role === 'owner' || me.role === 'pm');
   $('btn-manage-members').style.display = canManage ? 'flex' : 'none';
+  $('btn-project-settings').style.display = canManage ? 'flex' : 'none';
   $('btn-change-project-icon').style.display = canManage ? 'flex' : 'none';
   $('proj-avatar-wrap').classList.toggle('editable', canManage);
   $('btn-add-wbs-item').style.display = canManage ? 'inline-flex' : 'none';
@@ -1839,6 +1904,59 @@ async function renderTaskDetailBody(){
 
 /* ================= MANAGE MEMBERS ================= */
 $('btn-manage-members').onclick = async () => { await refreshMembersSheet(); toggleSheet('members-sheet', true); };
+
+/* ================= PROJECT SETTINGS (edit/delete) ================= */
+$('btn-project-settings').onclick = () => {
+  if (!activeConversation) return;
+  $('edit-project-name').value = activeConversation.name || '';
+  $('edit-project-site').value = activeConversation.site || '';
+  const isOwner = me.role === 'owner';
+  $('btn-delete-project').style.display = isOwner ? 'block' : 'none';
+  $('delete-project-hint').style.display = isOwner ? 'block' : 'none';
+  toggleSheet('project-settings-sheet', true);
+};
+
+$('btn-save-project-settings').onclick = async () => {
+  const name = $('edit-project-name').value.trim();
+  const site = $('edit-project-site').value.trim();
+  if (!name) { alert('Project name cannot be empty'); return; }
+  const { error } = await sb.from('ea_conversations').update({ name, site: site || null }).eq('id', activeConversation.id);
+  if (error) { alert('Could not save: ' + error.message); return; }
+  activeConversation.name = name; activeConversation.site = site || null;
+  const cached = conversations.find(c=>c.id===activeConversation.id);
+  if (cached) { cached.name = name; cached.site = site || null; }
+  $('thread-name').textContent = name;
+  $('thread-meta').textContent = site || '';
+  toggleSheet('project-settings-sheet', false);
+};
+
+$('btn-delete-project').onclick = async () => {
+  const name = activeConversation.name;
+  const typed = prompt(`This will permanently delete "${name}" and everything in it — tasks, chat, WBS, DLR. Type the project name to confirm.`);
+  if (typed !== name) { if (typed !== null) alert('Name did not match. Nothing was deleted.'); return; }
+  const convId = activeConversation.id;
+  try {
+    await sb.from('ea_task_comments').delete().in('task_id', (await sb.from('ea_tasks').select('id').eq('conversation_id', convId)).data?.map(t=>t.id) || []);
+    await sb.from('ea_task_updates').delete().in('task_id', (await sb.from('ea_tasks').select('id').eq('conversation_id', convId)).data?.map(t=>t.id) || []);
+    await sb.from('ea_task_assignees').delete().in('task_id', (await sb.from('ea_tasks').select('id').eq('conversation_id', convId)).data?.map(t=>t.id) || []);
+    await sb.from('ea_tasks').delete().eq('conversation_id', convId);
+    await sb.from('ea_wbs_updates').delete().in('wbs_item_id', (await sb.from('ea_wbs_items').select('id').eq('conversation_id', convId)).data?.map(w=>w.id) || []);
+    await sb.from('ea_wbs_items').delete().eq('conversation_id', convId);
+    await sb.from('ea_dlr_entries').delete().eq('conversation_id', convId);
+    await sb.from('ea_dlr_days').delete().eq('conversation_id', convId);
+    await sb.from('ea_categories').delete().eq('conversation_id', convId);
+    await sb.from('ea_messages').delete().eq('conversation_id', convId);
+    await sb.from('ea_pending_members').delete().eq('conversation_id', convId);
+    await sb.from('ea_conversation_members').delete().eq('conversation_id', convId);
+    const { error } = await sb.from('ea_conversations').delete().eq('id', convId);
+    if (error) throw error;
+    toggleSheet('project-settings-sheet', false);
+    activeConversation = null;
+    await loadConversations();
+    show('screen-projects');
+    renderProjectsList();
+  } catch (e) { alert('Could not delete project: ' + (e.message||e)); }
+};
 async function refreshMembersSheet(){
   const { data: current } = await sb.from('ea_conversation_members').select('user_id, role, ea_users(id, name, phone)').eq('conversation_id', activeConversation.id);
   const currentIds = new Set((current||[]).map(m=>m.user_id));
@@ -2401,7 +2519,7 @@ function progressWheelSVG(pct, size, strokeWidth, color){
   return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
     <circle cx="${size/2}" cy="${size/2}" r="${radius}" fill="none" stroke="var(--bg-raised)" stroke-width="${strokeWidth}"/>
     <circle cx="${size/2}" cy="${size/2}" r="${radius}" fill="none" stroke="${color}" stroke-width="${strokeWidth}" stroke-linecap="round" stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" transform="rotate(-90 ${size/2} ${size/2})"/>
-    <text x="50%" y="50%" text-anchor="middle" dominant-baseline="central" font-size="${Math.round(size*0.24)}" font-weight="700" font-family="Oswald" fill="var(--text-primary)">${Math.round(pct)}%</text>
+    <text x="50%" y="50%" text-anchor="middle" dominant-baseline="central" font-size="${Math.round(size*0.24)}" font-weight="700" font-family="Barlow Condensed" fill="var(--text-primary)">${Math.round(pct)}%</text>
   </svg>`;
 }
 async function renderMyProgress(){
