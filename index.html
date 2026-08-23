@@ -382,7 +382,9 @@
   .wbs-variance.ahead{color:var(--success);}
   .wbs-variance.behind{color:var(--danger);}
   .wbs-planned{color:var(--text-muted);}
-  .wbs-item{background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:12px 14px;margin-bottom:8px;cursor:pointer;}
+  .wbs-item{background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:12px 14px;margin-bottom:8px;}
+  .wbs-inline-row{display:flex;align-items:center;gap:10px;margin-top:10px;}
+  .wbs-inline-row input[type=range]{flex:1;accent-color:var(--accent);}
   .wbs-item.child{margin-left:20px;background:var(--bg-card-2);}
   .wbs-item.parent-readonly{cursor:default;}
   .wbs-item-top{display:flex;justify-content:space-between;align-items:center;gap:8px;}
@@ -568,6 +570,8 @@
       <div class="subtab" data-psub="chat">Chat</div>
       <div class="subtab" data-psub="progress">Progress</div>
       <div class="subtab" data-psub="dlr">DLR</div>
+      <div class="subtab" data-psub="pm">P&amp;M</div>
+      <div class="subtab" data-psub="pour">Pour</div>
     </div>
     <div id="pane-project-tasks" style="flex:1;display:flex;flex-direction:column;min-height:0;">
       <div class="quick-add-card">
@@ -641,11 +645,9 @@
         <div id="dlr-entries-list"></div>
         <button class="btn secondary" id="btn-show-add-trade" style="margin-top:4px;"><i class="ti ti-plus"></i> Add a trade</button>
         <div class="cs-form" id="dlr-add-form" style="grid-template-columns:1fr;margin-top:10px;display:none;">
-          <div><label>Trade / role</label><input type="text" id="dlr-trade-input" placeholder="e.g. Mason, Helper, Carpenter" list="dlr-trade-presets">
-            <datalist id="dlr-trade-presets">
-              <option value="Mason"><option value="Helper"><option value="Carpenter"><option value="Bar Bender">
-              <option value="Electrician"><option value="Plumber"><option value="Painter"><option value="Fabricator">
-            </datalist>
+          <div>
+            <label>Trade / role</label>
+            <div id="dlr-trade-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;"></div>
           </div>
           <div><label>Subcontractor (optional)</label><input type="text" id="dlr-sub-input" placeholder="e.g. Sri Ganesh Labour Co."></div>
           <div><label>Headcount</label><input type="number" id="dlr-count-input" min="0" placeholder="0"></div>
@@ -664,6 +666,49 @@
         <div id="dlr-submitted-note" style="text-align:center;margin-top:10px;"></div>
         <div class="cs-heading" style="margin-top:22px;">Last 7 days</div>
         <div id="dlr-history-list"></div>
+      </div>
+    </div>
+
+    <!-- P&M PANE -->
+    <div id="pane-project-pm" style="flex:1;display:none;flex-direction:column;min-height:0;">
+      <div class="chip-filter-row" id="pm-filter-row" style="align-items:center;"></div>
+      <div style="flex:1;overflow-y:auto;padding:0 14px 14px;">
+        <div id="pm-items-list"></div>
+        <button class="btn secondary" id="btn-add-pm-item" style="margin-top:10px;"><i class="ti ti-plus"></i> Add machine / powertool</button>
+      </div>
+    </div>
+
+    <!-- POUR PANE -->
+    <div id="pane-project-pour" style="flex:1;display:none;flex-direction:column;min-height:0;">
+      <div class="chip-filter-row" style="align-items:center;">
+        <div>
+          <div style="font-family:var(--font-display);font-size:18px;font-weight:600;" id="pour-date-heading">—</div>
+          <div style="font-size:11px;color:var(--text-muted);" id="pour-date-sub">—</div>
+        </div>
+        <span class="icon-btn" id="btn-pour-report" style="margin-left:auto;width:32px;height:32px;font-size:13px;"><i class="ti ti-file-report"></i></span>
+      </div>
+      <div style="flex:1;overflow-y:auto;padding:0 14px 14px;">
+        <div class="cs-card">
+          <div class="cs-heading">Type</div>
+          <div class="segmented" id="pour-type-toggle" style="margin-bottom:14px;">
+            <div class="seg" data-pour-type="PCC">PCC</div>
+            <div class="seg active" data-pour-type="RCC">RCC</div>
+          </div>
+          <div class="cs-heading">Location of pour</div>
+          <input type="text" id="pour-location-input" placeholder="e.g. L3 slab, Grid C-F" style="width:100%;background:var(--bg-card-2);border:1px solid var(--border);border-radius:9px;padding:11px 13px;color:var(--text-primary);font-size:15px;font-weight:600;margin-bottom:8px;">
+          <div class="chip-row" id="pour-recent-locations" style="margin-bottom:14px;"></div>
+          <div class="cs-heading">Grade</div>
+          <div id="pour-grade-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:14px;"></div>
+          <div class="cs-heading">Quantity (m³)</div>
+          <div style="display:flex;gap:8px;">
+            <div style="flex:1;height:52px;border:2px solid var(--navy);border-radius:9px;background:var(--bg-card);display:flex;align-items:center;padding:0 14px;">
+              <input type="number" id="pour-qty-input" step="0.1" min="0" placeholder="0" style="width:100%;border:none;background:transparent;font-family:var(--font-display);font-size:26px;font-weight:600;color:var(--text-primary);outline:none;">
+            </div>
+            <button class="btn gold" id="btn-pour-enter" style="width:84px;margin-top:0;">ENTER</button>
+          </div>
+        </div>
+        <div class="cs-heading" style="margin-top:18px;">Today's entries</div>
+        <div id="pour-entries-list"></div>
       </div>
     </div>
   </div>
@@ -897,6 +942,59 @@
       <div class="field"><label>Target date</label><input type="date" id="target-date-input"></div>
       <p style="font-size:11px;color:var(--text-muted);margin-top:-4px;">Used to calculate whether the site is ahead or behind schedule.</p>
       <button class="btn gold" id="btn-save-target-date">Save</button>
+    </div>
+  </div>
+
+  <!-- SHEET: add P&M item -->
+  <div class="sheet-backdrop" id="pm-item-sheet-backdrop"></div>
+  <div class="sheet" id="pm-item-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title"><span>Add machine / powertool</span><span class="sheet-close" data-close="pm-item-sheet">✕</span></div>
+    <div class="sheet-body">
+      <div class="field"><label>Name</label><input type="text" id="pm-name" placeholder="e.g. Bosch breaker, 11 kg"></div>
+      <div class="field"><label>Code / ID (optional)</label><input type="text" id="pm-code" placeholder="e.g. CCI-BR-02"></div>
+      <div class="field">
+        <label>On rental?</label>
+        <div class="segmented"><div class="seg active" data-pm-rental="no">Owned by CCI</div><div class="seg" data-pm-rental="yes">On rental</div></div>
+      </div>
+      <div id="pm-rental-fields" style="display:none;">
+        <div class="field"><label>Rental vendor</label><input type="text" id="pm-vendor" placeholder="e.g. Rathna Hire"></div>
+        <div class="field"><label>Rental ₹ per day</label><input type="number" id="pm-rate" min="0" placeholder="e.g. 850"></div>
+      </div>
+      <button class="btn gold" id="btn-create-pm-item">Add to site</button>
+    </div>
+  </div>
+
+  <!-- SHEET: mark for repair -->
+  <div class="sheet-backdrop" id="pm-repair-sheet-backdrop"></div>
+  <div class="sheet" id="pm-repair-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title"><span>Send for repair?</span><span class="sheet-close" data-close="pm-repair-sheet">✕</span></div>
+    <div class="sheet-body">
+      <p style="font-size:13.5px;color:var(--text-secondary);line-height:1.5;">The machine is marked unavailable to the whole site straight away, and EAGLES raises a repair task automatically — <b>High priority, due in 2 days</b>.</p>
+      <div class="field"><label>What's wrong? (optional)</label><input type="text" id="pm-repair-note" placeholder="e.g. Chisel jammed, no percussion"></div>
+      <button class="btn gold" id="btn-confirm-repair">Mark for repair</button>
+    </div>
+  </div>
+
+  <!-- SHEET: pour report -->
+  <div class="sheet-backdrop" id="pour-report-sheet-backdrop"></div>
+  <div class="sheet" id="pour-report-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title"><span>Pour report</span><span class="sheet-close" data-close="pour-report-sheet">✕</span></div>
+    <div class="sheet-body">
+      <div class="chip-row" id="pour-report-range">
+        <div class="chip selected" data-range="today">Today</div>
+        <div class="chip" data-range="week">This week</div>
+        <div class="chip" data-range="month">This month</div>
+        <div class="chip" data-range="last3months">Last 3 months</div>
+        <div class="chip" data-range="all">Full project</div>
+      </div>
+      <div id="pour-report-preview" style="margin-top:14px;"></div>
+      <div style="display:flex;gap:8px;margin-top:14px;">
+        <button class="btn secondary" id="btn-print-pour-report" style="margin-top:0;"><i class="ti ti-printer"></i> Print / PDF</button>
+        <button class="btn secondary" id="btn-whatsapp-pour-report" style="margin-top:0;"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button>
+      </div>
     </div>
   </div>
 
@@ -1382,10 +1480,14 @@ document.querySelectorAll('.subtab').forEach(el=>{
     $('pane-project-chat').style.display = sub==='chat' ? 'flex' : 'none';
     $('pane-project-progress').style.display = sub==='progress' ? 'flex' : 'none';
     $('pane-project-dlr').style.display = sub==='dlr' ? 'flex' : 'none';
+    $('pane-project-pm').style.display = sub==='pm' ? 'flex' : 'none';
+    $('pane-project-pour').style.display = sub==='pour' ? 'flex' : 'none';
     if (sub==='tasks') await renderProjectTasks();
     if (sub==='chat') { await loadMessages(activeConversation.id); subscribeMessages(activeConversation.id); }
     if (sub==='progress') await renderWBS(activeConversation.id);
     if (sub==='dlr') await initDLR(activeConversation.id);
+    if (sub==='pm') await renderPM(activeConversation.id);
+    if (sub==='pour') await initPour(activeConversation.id);
   };
 });
 
@@ -1833,11 +1935,19 @@ async function renderTaskDetailBody(){
     document.querySelectorAll('#td-pri-picker .pp').forEach(el=>{
       el.onclick = async () => {
         const pri = el.getAttribute('data-tdpri');
-        await sb.from('ea_tasks').update({ priority: pri }).eq('id', t.id);
-        activeTaskDetail.priority = pri;
         document.querySelectorAll('#td-pri-picker .pp').forEach(x=>x.classList.remove('active'));
         el.classList.add('active');
-        renderTasksHome();
+        try {
+          const { error } = await sb.from('ea_tasks').update({ priority: pri }).eq('id', t.id);
+          if (error) throw error;
+          const { data: verify } = await sb.from('ea_tasks').select('priority').eq('id', t.id).single();
+          if (!verify || verify.priority !== pri) throw new Error('Priority did not save - please try again');
+          activeTaskDetail.priority = pri;
+          renderTasksHome(); if (activeConversation) renderProjectTasks();
+        } catch (e) {
+          alert('Could not update priority: ' + (e.message||e));
+          document.querySelectorAll('#td-pri-picker .pp').forEach(x=>x.classList.toggle('active', x.getAttribute('data-tdpri')===t.priority));
+        }
       };
     });
     const delBtn = $('btn-delete-task');
@@ -2006,7 +2116,6 @@ async function renderWBS(convId){
   const overallPct = totalWeight > 0 ? (weighted/totalWeight) : 0;
   $('wbs-overall-pct').innerHTML = overallPct.toFixed(1) + '<span style="font-size:22px;">%</span>';
 
-  // planned vs actual
   let plannedHtml = 'No target date set';
   let varianceHtml = '';
   if (activeConversation.target_completion_date) {
@@ -2027,11 +2136,17 @@ async function renderWBS(convId){
   $('wbs-variance').innerHTML = varianceHtml;
 
   const canManage = (me.role==='owner'||me.role==='pm');
+  const inlineSlider = (item) => `
+    <div class="wbs-inline-row">
+      <input type="range" min="0" max="100" step="5" value="${item.progress_pct}" data-wbs-slider="${item.id}">
+      <span class="icon-btn" data-wbs-note="${item.id}" style="width:26px;height:26px;font-size:11px;flex-shrink:0;" title="Add note or photo"><i class="ti ti-camera"></i></span>
+    </div>`;
+
   let html = '';
   tree.forEach(parent => {
     const hasChildren = parent.children.length > 0;
     html += `
-      <div class="wbs-item ${hasChildren?'parent-readonly':''}" data-wbs-id="${parent.id}" data-has-children="${hasChildren}">
+      <div class="wbs-item" data-wbs-id="${parent.id}">
         <div class="wbs-item-top">
           <span><span class="wbs-item-code">${parent.code}</span><span class="wbs-item-name">${esc(parent.name)}</span></span>
           <span style="display:flex;align-items:center;gap:6px;">
@@ -2041,6 +2156,7 @@ async function renderWBS(convId){
           </span>
         </div>
         <div class="gauge"><div class="gauge-fill ${parent.effectivePct>=100?'done':''}" style="width:${parent.effectivePct}%"></div></div>
+        ${hasChildren ? `<div style="font-size:11px;color:var(--text-muted);margin-top:8px;">Computed automatically from ${parent.children.length} sub-item${parent.children.length>1?'s':''} below</div>` : inlineSlider(parent)}
       </div>`;
     parent.children.forEach(child => {
       html += `
@@ -2053,19 +2169,33 @@ async function renderWBS(convId){
             </span>
           </div>
           <div class="gauge"><div class="gauge-fill ${child.progress_pct>=100?'done':''}" style="width:${child.progress_pct}%"></div></div>
+          ${inlineSlider(child)}
         </div>`;
     });
   });
   $('wbs-list').innerHTML = html || `<div class="empty-state"><div class="big"><i class="ti ti-list-tree"></i></div>No WBS items yet.${canManage?' Tap "Add item" above.':''}</div>`;
 
   const flatItems = items || [];
-  $('wbs-list').querySelectorAll('[data-wbs-id]').forEach(row=>{
-    row.onclick = (e) => {
-      if (e.target.closest('[data-edit-wbs]')) return;
-      const hasChildren = row.getAttribute('data-has-children') === 'true';
-      if (hasChildren) return; // parent progress is computed, not directly editable
-      const item = flatItems.find(i=>i.id===row.getAttribute('data-wbs-id'));
-      openWbsUpdateSheet(item);
+
+  $('wbs-list').querySelectorAll('[data-wbs-slider]').forEach(slider=>{
+    slider.oninput = (e) => {
+      const wrap = slider.closest('.wbs-item');
+      const pctEl = wrap.querySelector('.wbs-item-pct');
+      if (pctEl) pctEl.textContent = e.target.value + '%';
+      const fillEl = wrap.querySelector('.gauge-fill');
+      if (fillEl) fillEl.style.width = e.target.value + '%';
+    };
+    slider.onchange = async (e) => {
+      const itemId = slider.getAttribute('data-wbs-slider');
+      const pct = parseInt(e.target.value, 10);
+      await saveWbsProgressInline(itemId, pct, flatItems);
+    };
+  });
+  $('wbs-list').querySelectorAll('[data-wbs-note]').forEach(btn=>{
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const item = flatItems.find(i=>i.id===btn.getAttribute('data-wbs-note'));
+      if (item) openWbsUpdateSheet(item);
     };
   });
   $('wbs-list').querySelectorAll('[data-edit-wbs]').forEach(btn=>{
@@ -2078,6 +2208,17 @@ async function renderWBS(convId){
       } catch (err) { alert('Could not open edit sheet: ' + (err.message||err)); }
     };
   });
+}
+
+async function saveWbsProgressInline(itemId, pct, flatItems){
+  try {
+    const { error } = await sb.from('ea_wbs_items').update({ progress_pct: pct, updated_at: new Date().toISOString() }).eq('id', itemId);
+    if (error) throw error;
+    await sb.from('ea_wbs_updates').insert({ wbs_item_id: itemId, user_id: me.id, progress_pct: pct });
+    const item = flatItems.find(i=>i.id===itemId);
+    await sb.from('ea_messages').insert({ conversation_id: activeConversation.id, sender_id: me.id, msg_type:'system', content: `${me.name} updated "${item?.name||'a WBS item'}" to ${pct}%` });
+    await renderWBS(activeConversation.id);
+  } catch (e) { alert('Could not save progress: ' + (e.message||e)); }
 }
 
 let editingWbsItemId = null;
@@ -2242,7 +2383,11 @@ async function initDLR(convId){
 }
 $('dlr-prev-day').onclick = () => { dlrCurrentDate.setDate(dlrCurrentDate.getDate()-1); renderDLR(activeConversation.id); };
 $('dlr-next-day').onclick = () => { dlrCurrentDate.setDate(dlrCurrentDate.getDate()+1); renderDLR(activeConversation.id); };
-$('btn-show-add-trade').onclick = () => { $('dlr-add-form').style.display = $('dlr-add-form').style.display==='none'?'grid':'none'; };
+$('btn-show-add-trade').onclick = () => {
+  const willShow = $('dlr-add-form').style.display === 'none';
+  $('dlr-add-form').style.display = willShow ? 'grid' : 'none';
+  if (willShow) renderDlrTradeGrid();
+};
 
 async function renderDLR(convId){
   const dateStr = dlrDateStr(dlrCurrentDate);
@@ -2306,15 +2451,29 @@ async function renderDLR(convId){
   `).join('') : `<p style="font-size:12px;color:var(--text-muted);">No history yet.</p>`;
 }
 
+const DLR_TRADES = ['Masons','Helpers','Carpenters','Carp Helpers','Steel fitters','St helpers','Electrician','Operators','Others'];
+let dlrSelectedTrade = null;
+function renderDlrTradeGrid(){
+  dlrSelectedTrade = null;
+  $('dlr-trade-grid').innerHTML = DLR_TRADES.map(t=>`<div class="chip" data-trade="${esc(t)}" style="text-align:center;">${esc(t)}</div>`).join('');
+  $('dlr-trade-grid').querySelectorAll('[data-trade]').forEach(el=>{
+    el.onclick = () => {
+      $('dlr-trade-grid').querySelectorAll('[data-trade]').forEach(x=>x.classList.remove('selected'));
+      el.classList.add('selected');
+      dlrSelectedTrade = el.getAttribute('data-trade');
+    };
+  });
+}
+
 $('btn-add-dlr-entry').onclick = async () => {
-  const trade = $('dlr-trade-input').value.trim();
   const sub = $('dlr-sub-input').value.trim();
   const count = parseInt($('dlr-count-input').value, 10) || 0;
   const dateStr = dlrDateStr(dlrCurrentDate);
-  if (!trade) { alert('Enter a trade'); return; }
-  const { error } = await sb.from('ea_dlr_entries').insert({ conversation_id: activeConversation.id, entry_date: dateStr, trade, subcontractor: sub||null, headcount: count, created_by: me.id });
+  if (!dlrSelectedTrade) { alert('Pick a trade'); return; }
+  const { error } = await sb.from('ea_dlr_entries').insert({ conversation_id: activeConversation.id, entry_date: dateStr, trade: dlrSelectedTrade, subcontractor: sub||null, headcount: count, created_by: me.id });
   if (error) { alert('Could not add entry: ' + error.message); return; }
-  $('dlr-trade-input').value=''; $('dlr-sub-input').value=''; $('dlr-count-input').value='';
+  $('dlr-sub-input').value=''; $('dlr-count-input').value='';
+  renderDlrTradeGrid();
   await renderDLR(activeConversation.id);
 };
 $('btn-submit-dlr-day').onclick = async () => {
@@ -2353,6 +2512,312 @@ $('btn-whatsapp-dlr').onclick = async () => {
     text += `\n*Total on site: ${total}*`;
     window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
   } catch (e) { alert('Could not prepare WhatsApp message: ' + (e.message||e)); }
+};
+
+/* ================= P&M (PLANT & MACHINERY) ================= */
+let pmActiveFilter = 'all';
+let pmRepairItemId = null;
+
+async function renderPM(convId){
+  const { data: items, error } = await sb.from('ea_pm_items').select('*').eq('conversation_id', convId).order('created_at', {ascending:false});
+  if (error) { alert('Could not load P&M: ' + error.message); return; }
+  const all = items || [];
+  const counts = {
+    all: all.length,
+    available: all.filter(i=>i.status==='available').length,
+    repair: all.filter(i=>i.status==='repair').length,
+    rental: all.filter(i=>i.status==='rental').length,
+  };
+  $('pm-filter-row').innerHTML = `
+    <div class="chip-filter ${pmActiveFilter==='all'?'selected':''}" data-pmf="all">All ${counts.all}</div>
+    <div class="chip-filter ${pmActiveFilter==='available'?'selected':''}" data-pmf="available">On site ${counts.available}</div>
+    <div class="chip-filter ${pmActiveFilter==='repair'?'selected':''}" data-pmf="repair">Repair ${counts.repair}</div>
+    <div class="chip-filter ${pmActiveFilter==='rental'?'selected':''}" data-pmf="rental">Rented ${counts.rental}</div>
+  `;
+  $('pm-filter-row').querySelectorAll('[data-pmf]').forEach(el=>{
+    el.onclick = () => { pmActiveFilter = el.getAttribute('data-pmf'); renderPM(convId); };
+  });
+
+  const list = pmActiveFilter==='all' ? all : all.filter(i=>i.status===pmActiveFilter);
+
+  $('pm-items-list').innerHTML = list.length ? list.map(item => {
+    let statusLabel = 'ON SITE', spineColor = 'var(--success)', labelColor = 'var(--success)';
+    if (item.status==='repair') { statusLabel='IN REPAIR'; spineColor='var(--danger)'; labelColor='var(--danger)'; }
+    else if (item.status==='rental') { statusLabel='ON RENTAL'; spineColor='var(--accent)'; labelColor='var(--accent-dark)'; }
+
+    let actionButtons = '';
+    if (item.status !== 'repair') actionButtons += `<button class="btn secondary small" data-pm-repair="${item.id}" style="margin-top:0;">Mark for repair</button>`;
+    if (item.status === 'rental') actionButtons += `<button class="btn secondary small" data-pm-return="${item.id}" style="margin-top:0;">Mark returned</button>`;
+    if (item.status === 'repair') actionButtons += `<button class="btn secondary small" data-pm-fixed="${item.id}" style="margin-top:0;">Mark fixed</button>`;
+    if (me.role === 'owner') actionButtons += `<span class="icon-btn" data-pm-delete="${item.id}" style="width:32px;height:32px;font-size:12px;color:var(--danger);"><i class="ti ti-trash"></i></span>`;
+
+    return `<div class="wbs-item" style="border-left:4px solid ${spineColor};">
+      <div class="wbs-item-top">
+        <span style="font-family:var(--font-display);font-size:12px;font-weight:600;letter-spacing:0.08em;color:${labelColor};">${statusLabel}</span>
+        ${item.code?`<span style="font-size:12px;color:var(--text-muted);">${esc(item.code)}</span>`:''}
+      </div>
+      <div class="wbs-item-name" style="margin:6px 0 3px;">${esc(item.name)}</div>
+      ${item.status==='rental' ? `<div style="font-size:13px;color:var(--text-secondary);">${item.rental_vendor?esc(item.rental_vendor)+' · ':''}${item.rental_rate_per_day?`<strong style="font-family:var(--font-display);font-size:16px;color:var(--text-primary);">₹${item.rental_rate_per_day}</strong>/day`:''}</div>` : ''}
+      ${item.status==='repair' && item.repair_note ? `<div style="font-size:12.5px;color:var(--text-secondary);margin-top:4px;">${esc(item.repair_note)}</div>` : ''}
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center;">${actionButtons}</div>
+    </div>`;
+  }).join('') : `<div class="empty-state"><div class="big"><i class="ti ti-tools"></i></div>No machinery logged yet.</div>`;
+
+  $('pm-items-list').querySelectorAll('[data-pm-repair]').forEach(btn=>{
+    btn.onclick = () => openPmRepairSheet(btn.getAttribute('data-pm-repair'));
+  });
+  $('pm-items-list').querySelectorAll('[data-pm-return]').forEach(btn=>{
+    btn.onclick = async () => {
+      if (!confirm('Mark this machine as returned? It will be removed from the project.')) return;
+      const { error } = await sb.from('ea_pm_items').delete().eq('id', btn.getAttribute('data-pm-return'));
+      if (error) { alert('Could not mark returned: ' + error.message); return; }
+      await renderPM(convId);
+    };
+  });
+  $('pm-items-list').querySelectorAll('[data-pm-fixed]').forEach(btn=>{
+    btn.onclick = async () => {
+      const { error } = await sb.from('ea_pm_items').update({ status:'available', repair_note:null, updated_at: new Date().toISOString() }).eq('id', btn.getAttribute('data-pm-fixed'));
+      if (error) { alert('Could not update: ' + error.message); return; }
+      await renderPM(convId);
+    };
+  });
+  $('pm-items-list').querySelectorAll('[data-pm-delete]').forEach(btn=>{
+    btn.onclick = async () => {
+      if (!confirm('Permanently remove this item?')) return;
+      const { error } = await sb.from('ea_pm_items').delete().eq('id', btn.getAttribute('data-pm-delete'));
+      if (error) { alert('Could not delete: ' + error.message); return; }
+      await renderPM(convId);
+    };
+  });
+}
+
+$('btn-add-pm-item').onclick = () => {
+  $('pm-name').value=''; $('pm-code').value=''; $('pm-vendor').value=''; $('pm-rate').value='';
+  document.querySelectorAll('[data-pm-rental]').forEach(x=>x.classList.remove('active'));
+  document.querySelector('[data-pm-rental="no"]').classList.add('active');
+  $('pm-rental-fields').style.display = 'none';
+  toggleSheet('pm-item-sheet', true);
+};
+document.querySelectorAll('[data-pm-rental]').forEach(el=>{
+  el.onclick = () => {
+    document.querySelectorAll('[data-pm-rental]').forEach(x=>x.classList.remove('active'));
+    el.classList.add('active');
+    $('pm-rental-fields').style.display = el.getAttribute('data-pm-rental')==='yes' ? 'block' : 'none';
+  };
+});
+$('btn-create-pm-item').onclick = async () => {
+  const name = $('pm-name').value.trim();
+  if (!name) { alert('Enter a name'); return; }
+  const isRental = document.querySelector('[data-pm-rental].active').getAttribute('data-pm-rental') === 'yes';
+  const { error } = await sb.from('ea_pm_items').insert({
+    conversation_id: activeConversation.id, name, code: $('pm-code').value.trim()||null,
+    status: isRental ? 'rental' : 'available',
+    rental_vendor: isRental ? ($('pm-vendor').value.trim()||null) : null,
+    rental_rate_per_day: isRental ? (parseFloat($('pm-rate').value)||null) : null,
+    added_by: me.id
+  });
+  if (error) { alert('Could not add: ' + error.message); return; }
+  toggleSheet('pm-item-sheet', false);
+  await renderPM(activeConversation.id);
+};
+
+function openPmRepairSheet(itemId){
+  pmRepairItemId = itemId;
+  $('pm-repair-note').value = '';
+  toggleSheet('pm-repair-sheet', true);
+}
+$('btn-confirm-repair').onclick = async () => {
+  if (!pmRepairItemId) return;
+  try {
+    const { data: item, error: fetchErr } = await sb.from('ea_pm_items').select('*').eq('id', pmRepairItemId).single();
+    if (fetchErr) throw fetchErr;
+    const note = $('pm-repair-note').value.trim();
+    const due = new Date(); due.setDate(due.getDate()+2);
+    const { data: task, error: taskErr } = await sb.from('ea_tasks').insert({
+      conversation_id: activeConversation.id, title: `Repair ${item.name}`, description: note||null,
+      task_type: 'individual', priority: 'high', due_date: due.toISOString().slice(0,10), created_by: me.id
+    }).select().single();
+    if (taskErr) throw taskErr;
+    const { error } = await sb.from('ea_pm_items').update({ status:'repair', repair_note: note||null, repair_task_id: task.id, updated_at: new Date().toISOString() }).eq('id', pmRepairItemId);
+    if (error) throw error;
+    await sb.from('ea_messages').insert({ conversation_id: activeConversation.id, sender_id: me.id, msg_type:'system', content: `${me.name} marked "${item.name}" for repair — task created (High priority, due in 2 days)` });
+    toggleSheet('pm-repair-sheet', false);
+    await renderPM(activeConversation.id);
+    renderTasksHome();
+  } catch (e) { alert('Could not mark for repair: ' + (e.message||e)); }
+};
+
+/* ================= CONCRETE POUR DATA ================= */
+let pourActiveType = 'RCC';
+let pourCurrentDate = new Date();
+let pourSelectedGrade = null;
+let currentPourReport = null;
+const CONCRETE_GRADES = ['M10','M15','M20','M25','M30','M35','M40','M45','M50'];
+
+function pourDateStr(d){ return d.toISOString().slice(0,10); }
+
+async function initPour(convId){
+  pourCurrentDate = new Date();
+  $('pour-date-heading').textContent = pourCurrentDate.toLocaleDateString('en-US',{weekday:'short',day:'numeric',month:'short'});
+  renderPourGradeGrid();
+  await renderPourEntries(convId);
+  await loadRecentPourLocations(convId);
+}
+
+function renderPourGradeGrid(){
+  pourSelectedGrade = null;
+  $('pour-grade-grid').innerHTML = CONCRETE_GRADES.map(g=>`<div class="pp" data-grade="${g}" style="text-align:center;padding:10px 0;border:1px solid var(--border);border-radius:4px;font-family:var(--font-display);font-size:14px;font-weight:600;cursor:pointer;">${g}</div>`).join('')
+    + `<div class="pp" data-grade="Other" style="text-align:center;padding:10px 0;border:1px dashed var(--border);border-radius:4px;font-size:12px;color:var(--text-muted);cursor:pointer;grid-column:span 1;">Other</div>`;
+  $('pour-grade-grid').querySelectorAll('[data-grade]').forEach(el=>{
+    el.onclick = () => {
+      $('pour-grade-grid').querySelectorAll('[data-grade]').forEach(x=>{ x.style.borderColor='var(--border)'; x.style.background='transparent'; x.style.color='var(--text-primary)'; x.style.borderWidth='1px'; });
+      let grade = el.getAttribute('data-grade');
+      if (grade === 'Other') {
+        const custom = prompt('Enter grade (e.g. M55, design mix)');
+        if (!custom) return;
+        grade = custom;
+      }
+      el.style.borderColor='var(--accent)'; el.style.borderWidth='2px'; el.style.background='color-mix(in srgb, var(--accent) 12%, transparent)'; el.style.color='var(--accent-dark)';
+      pourSelectedGrade = grade;
+    };
+  });
+}
+
+document.querySelectorAll('[data-pour-type]').forEach(el=>{
+  el.onclick = () => {
+    document.querySelectorAll('[data-pour-type]').forEach(x=>x.classList.remove('active'));
+    el.classList.add('active');
+    pourActiveType = el.getAttribute('data-pour-type');
+  };
+});
+
+async function loadRecentPourLocations(convId){
+  const { data } = await sb.from('ea_concrete_pours').select('location').eq('conversation_id', convId).order('created_at', {ascending:false}).limit(20);
+  const unique = [...new Set((data||[]).map(r=>r.location))].slice(0,5);
+  $('pour-recent-locations').innerHTML = unique.map(loc=>`<div class="chip" data-loc="${esc(loc)}">${esc(loc)}</div>`).join('');
+  $('pour-recent-locations').querySelectorAll('[data-loc]').forEach(chip=>{
+    chip.onclick = () => { $('pour-location-input').value = chip.getAttribute('data-loc'); };
+  });
+}
+
+$('btn-pour-enter').onclick = async () => {
+  const location = $('pour-location-input').value.trim();
+  const qty = parseFloat($('pour-qty-input').value);
+  if (!location) { alert('Enter the pour location'); return; }
+  if (!pourSelectedGrade) { alert('Pick a grade'); return; }
+  if (isNaN(qty) || qty <= 0) { alert('Enter a valid quantity'); return; }
+  const { error } = await sb.from('ea_concrete_pours').insert({
+    conversation_id: activeConversation.id, pour_date: pourDateStr(pourCurrentDate), pour_type: pourActiveType,
+    location, grade: pourSelectedGrade, quantity: qty, created_by: me.id
+  });
+  if (error) { alert('Could not save: ' + error.message); return; }
+  $('pour-qty-input').value = '';
+  await renderPourEntries(activeConversation.id);
+  await loadRecentPourLocations(activeConversation.id);
+};
+$('pour-qty-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('btn-pour-enter').click(); });
+
+async function renderPourEntries(convId){
+  const dateStr = pourDateStr(pourCurrentDate);
+  const { data } = await sb.from('ea_concrete_pours').select('*, ea_users(name)').eq('conversation_id', convId).eq('pour_date', dateStr).order('created_at', {ascending:false});
+  const rows = data || [];
+  const totalQty = rows.reduce((s,r)=>s+Number(r.quantity),0);
+  $('pour-date-sub').textContent = `${rows.length} pour${rows.length!==1?'s':''} logged · ${totalQty.toFixed(1)} m³`;
+
+  $('pour-entries-list').innerHTML = rows.length ? `<div class="cs-card" style="padding:0;overflow:hidden;">` + rows.map((r,i) => {
+    const canEdit = (me.role==='owner'||me.role==='pm') || (r.created_by===me.id && !r.locked_for_staff);
+    return `
+    <div style="display:flex;align-items:center;gap:12px;padding:11px 14px;${i<rows.length-1?'border-bottom:1px solid var(--border);':''}">
+      <span style="font-family:var(--font-display);font-size:12px;font-weight:600;letter-spacing:0.06em;border:1px solid var(--border);border-radius:2px;padding:2px 6px;flex-shrink:0;">${r.pour_type}</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:700;">${esc(r.location)}</div>
+        <div style="font-size:11.5px;color:var(--text-muted);">${esc(r.grade)} · ${new Date(r.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} · ${esc(r.ea_users?.name||'')}</div>
+      </div>
+      <span style="font-family:var(--font-display);font-size:17px;font-weight:600;">${Number(r.quantity).toFixed(1)}</span>
+      ${canEdit ? `<span class="icon-btn" data-pour-edit="${r.id}" style="width:28px;height:28px;font-size:11px;"><i class="ti ti-pencil"></i></span>` : `<span style="color:var(--text-muted);"><i class="ti ti-lock"></i></span>`}
+    </div>`;
+  }).join('') + `</div>` : `<div class="empty-state"><div class="big"><i class="ti ti-droplet"></i></div>No pours logged for this date yet.</div>`;
+
+  $('pour-entries-list').querySelectorAll('[data-pour-edit]').forEach(btn=>{
+    btn.onclick = () => openPourEditPrompt(btn.getAttribute('data-pour-edit'), rows);
+  });
+  if (me.role==='staff' && rows.some(r=>r.locked_for_staff && r.created_by===me.id)) {
+    $('pour-entries-list').insertAdjacentHTML('beforeend', `<p style="font-size:11.5px;color:var(--text-muted);margin-top:8px;">The lock means it's been edited once already — only the owner/PM can change it now.</p>`);
+  }
+}
+
+function openPourEditPrompt(id, rows){
+  const row = rows.find(r=>r.id===id);
+  if (!row) return;
+  const newQty = prompt(`Edit quantity for "${row.location}" (${row.grade})`, row.quantity);
+  if (newQty === null) return;
+  const qty = parseFloat(newQty);
+  if (isNaN(qty) || qty < 0) { alert('Enter a valid number'); return; }
+  savePourEdit(id, qty);
+}
+async function savePourEdit(id, qty){
+  const isOwnerOrPm = (me.role==='owner'||me.role==='pm');
+  const updates = { quantity: qty };
+  if (!isOwnerOrPm) updates.locked_for_staff = true;
+  const { error } = await sb.from('ea_concrete_pours').update(updates).eq('id', id);
+  if (error) { alert('Could not save: ' + error.message); return; }
+  await renderPourEntries(activeConversation.id);
+}
+
+$('btn-pour-report').onclick = () => {
+  toggleSheet('pour-report-sheet', true);
+  generatePourReport('today');
+};
+document.querySelectorAll('#pour-report-range .chip').forEach(el=>{
+  el.onclick = () => {
+    document.querySelectorAll('#pour-report-range .chip').forEach(x=>x.classList.remove('selected'));
+    el.classList.add('selected');
+    generatePourReport(el.getAttribute('data-range'));
+  };
+});
+
+async function generatePourReport(range){
+  const today = new Date();
+  let start = null;
+  if (range==='today') start = new Date(today);
+  else if (range==='week') { start = new Date(today); start.setDate(start.getDate()-7); }
+  else if (range==='month') { start = new Date(today.getFullYear(), today.getMonth(), 1); }
+  else if (range==='last3months') { start = new Date(today); start.setMonth(start.getMonth()-3); }
+
+  let query = sb.from('ea_concrete_pours').select('*, ea_users(name)').eq('conversation_id', activeConversation.id).order('pour_date', {ascending:false});
+  if (start) query = query.gte('pour_date', pourDateStr(start));
+  const { data, error } = await query;
+  if (error) { $('pour-report-preview').innerHTML = `<p style="color:var(--danger);font-size:13px;">${error.message}</p>`; return; }
+  const rows = data || [];
+  const totalQty = rows.reduce((s,r)=>s+Number(r.quantity),0);
+  const byGrade = {};
+  rows.forEach(r => { byGrade[r.grade] = (byGrade[r.grade]||0) + Number(r.quantity); });
+
+  currentPourReport = { range, rows, totalQty, byGrade };
+
+  $('pour-report-preview').innerHTML = `
+    <div style="text-align:center;padding:14px 0;">
+      <div style="font-size:36px;font-weight:700;font-family:var(--font-display);color:var(--accent-dark);">${totalQty.toFixed(1)} m³</div>
+      <div style="font-size:12px;color:var(--text-muted);">${rows.length} pour${rows.length!==1?'s':''} total</div>
+    </div>
+    ${Object.entries(byGrade).map(([g,q])=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;"><span>${esc(g)}</span><strong>${q.toFixed(1)} m³</strong></div>`).join('') || '<p style="font-size:13px;color:var(--text-muted);">No entries in this range.</p>'}
+  `;
+}
+
+$('btn-print-pour-report').onclick = () => {
+  if (!currentPourReport) return;
+  printBrandedReport(
+    activeConversation.name + ' — Concrete Pour Report',
+    `${currentPourReport.range} · Total: ${currentPourReport.totalQty.toFixed(1)} m³ · ${new Date().toLocaleDateString()}`,
+    ['Date', 'Type', 'Location', 'Grade', 'Qty (m³)'],
+    currentPourReport.rows.map(row=>[row.pour_date, row.pour_type, esc(row.location), esc(row.grade), Number(row.quantity).toFixed(1)])
+  );
+};
+$('btn-whatsapp-pour-report').onclick = () => {
+  if (!currentPourReport) return;
+  let text = `*${activeConversation.name} — Concrete Pour Report*\n${currentPourReport.range}\n\nTotal: ${currentPourReport.totalQty.toFixed(1)} m³ (${currentPourReport.rows.length} pours)\n\n`;
+  Object.entries(currentPourReport.byGrade).forEach(([g,q]) => { text += `${g}: ${q.toFixed(1)} m³\n`; });
+  window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
 };
 
 /* ================= OWNER CONSOLE ================= */
