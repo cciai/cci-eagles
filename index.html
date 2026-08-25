@@ -320,10 +320,16 @@
   .sidebar-profile-footer .sp-role{font-size:11px;color:rgba(255,255,255,0.5);}
   #main-col{display:flex;flex-direction:column;flex:1;min-width:0;height:100%;}
   @media (min-width:860px){
-    #app{max-width:1180px;flex-direction:row;}
+    #app{max-width:100%;flex-direction:row;}
     #sidebar{display:flex;}
     #main-col{border-left:1px solid var(--border);}
     .bottomnav{display:none !important;}
+    .task-list-wrap,.board-wrap,.console-pane,.messages,
+    #pane-project-tasks,#pane-project-progress,#pane-project-pm,#pane-project-pour,
+    .brandbar-greeting,.subhead-row,.chip-filter-row,.view-tabs{
+      max-width:1100px;margin-left:auto;margin-right:auto;width:100%;
+    }
+    .brandbar,.thread-header,.dlr-total-banner,.subtabs{padding-left:max(16px, calc((100% - 1100px) / 2));padding-right:max(16px, calc((100% - 1100px) / 2));}
   }
 
   /* ---------- Quick add ---------- */
