@@ -3,8 +3,8 @@
   "short_name": "EAGLES",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#F5F5F7",
-  "theme_color": "#F5F5F7",
+  "background_color": "#16243A",
+  "theme_color": "#16243A",
   "orientation": "portrait",
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },

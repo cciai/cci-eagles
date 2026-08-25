@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
-<meta name="theme-color" content="#0F1F3D">
+<meta name="theme-color" content="#16243A">
 <script>
 (function(){
   try {
@@ -1073,27 +1073,40 @@ document.querySelectorAll('.sheet-backdrop').forEach(el=>{
 /* ---------------- AUTH ---------------- */
 function phoneToInternalEmail(phone){ return phone + '@eagles.cci.local'; }
 
+function withTimeout(promise, ms, label){
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} timed out — check your internet connection and try again`)), ms))
+  ]);
+}
+
 $('btn-login-pin').onclick = async () => {
   const phone = $('input-phone').value.trim();
   const pin = $('input-pin').value.trim();
   if (phone.length < 10) { $('login-status').textContent = 'Enter a valid 10-digit number'; return; }
   if (pin.length !== 6) { $('login-status').textContent = 'PIN must be exactly 6 digits'; return; }
   $('login-status').textContent = 'Checking…';
-  const email = phoneToInternalEmail(phone);
-  let { data, error } = await sb.auth.signInWithPassword({ email, password: pin });
-  if (error) {
-    const { data: approved, error: approvalErr } = await sb.rpc('ea_is_phone_approved', { check_phone: phone });
-    if (approvalErr || !approved) {
-      $('login-status').textContent = 'This phone number has not been approved. Contact the site owner to be added.';
-      return;
+  $('btn-login-pin').disabled = true;
+  try {
+    const email = phoneToInternalEmail(phone);
+    let { data, error } = await withTimeout(sb.auth.signInWithPassword({ email, password: pin }), 15000, 'Sign-in');
+    if (error) {
+      const { data: approved, error: approvalErr } = await withTimeout(sb.rpc('ea_is_phone_approved', { check_phone: phone }), 15000, 'Approval check');
+      if (approvalErr || !approved) {
+        $('login-status').textContent = 'This phone number has not been approved. Contact the site owner to be added.';
+        return;
+      }
+      const su = await withTimeout(sb.auth.signUp({ email, password: pin }), 15000, 'Account creation');
+      if (su.error) { $('login-status').textContent = su.error.message; return; }
+      data = su.data;
     }
-    const su = await sb.auth.signUp({ email, password: pin });
-    if (su.error) { $('login-status').textContent = su.error.message; return; }
-    data = su.data;
-  }
-  session = data.session;
-  await loadMe(phone);
-};
+    session = data.session;
+    await loadMe(phone);
+  } catch (e) {
+    $('login-status').textContent = e.message || 'Something went wrong — please try again';
+  } finally {
+    $('btn-login-pin').disabled = false;
+  }};
 
 async function loadMe(phoneEntered){
   try {
