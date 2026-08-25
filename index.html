@@ -2117,6 +2117,29 @@ async function refreshMembersSheet(){
 /* ================= WBS PROGRESS TRACKER (hierarchical) ================= */
 let activeWbsItem = null;
 
+function weightedPctAsOfDate(items, updatesByItem, asOfDate){
+  const topLevel = items.filter(i => !i.parent_id);
+  function pctAsOf(itemId){
+    const updates = updatesByItem.get(itemId) || [];
+    let val = 0;
+    for (const u of updates) {
+      if (new Date(u.created_at) <= asOfDate) val = u.progress_pct;
+      else break;
+    }
+    return val;
+  }
+  let totalWeight = 0, weighted = 0;
+  topLevel.forEach(parent => {
+    const children = items.filter(i => i.parent_id === parent.id);
+    const effectivePct = children.length
+      ? children.reduce((s,c) => s + pctAsOf(c.id), 0) / children.length
+      : pctAsOf(parent.id);
+    totalWeight += Number(parent.weight_pct);
+    weighted += Number(parent.weight_pct) * effectivePct;
+  });
+  return totalWeight > 0 ? weighted/totalWeight : 0;
+}
+
 function buildWbsTree(items){
   const top = items.filter(i=>!i.parent_id).sort((a,b)=> (a.order_index-b.order_index) || (new Date(a.created_at)-new Date(b.created_at)));
   return top.map((parent, idx) => {
@@ -2353,15 +2376,37 @@ $('btn-view-wbs-report').onclick = async () => {
   if (!activeConversation) throw new Error('No active project');
   const { data: items, error } = await sb.from('ea_wbs_items').select('*').eq('conversation_id', activeConversation.id).order('order_index').order('created_at');
   if (error) throw error;
-  const tree = buildWbsTree(items || []);
+  const flatItems = items || [];
+  const tree = buildWbsTree(flatItems);
   const totalWeight = tree.reduce((s,i)=>s+Number(i.weight_pct),0);
   const weighted = tree.reduce((s,i)=>s+Number(i.weight_pct)*i.effectivePct,0);
   const overallPct = totalWeight > 0 ? (weighted/totalWeight) : 0;
+
+  const { data: allUpdates } = await sb.from('ea_wbs_updates').select('wbs_item_id, progress_pct, created_at').in('wbs_item_id', flatItems.map(i=>i.id)).order('created_at');
+  const updatesByItem = new Map();
+  (allUpdates||[]).forEach(u => {
+    if (!updatesByItem.has(u.wbs_item_id)) updatesByItem.set(u.wbs_item_id, []);
+    updatesByItem.get(u.wbs_item_id).push(u);
+  });
+
+  const now = new Date();
+  const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate()-7);
+  const monthAgo = new Date(now); monthAgo.setMonth(monthAgo.getMonth()-1);
+  const pctWeekAgo = weightedPctAsOfDate(flatItems, updatesByItem, weekAgo);
+  const pctMonthAgo = weightedPctAsOfDate(flatItems, updatesByItem, monthAgo);
+  const weekDelta = overallPct - pctWeekAgo;
+  const monthDelta = overallPct - pctMonthAgo;
+  const deltaChip = (d) => `<span style="font-weight:700;color:${d>=0?'var(--success)':'var(--danger)'};">${d>=0?'+':''}${d.toFixed(1)}%</span>`;
+
   $('wbs-report-body').innerHTML = `
-    <div style="text-align:center;margin-bottom:18px;">
+    <div style="text-align:center;margin-bottom:14px;">
       <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">${esc(activeConversation.name)}</div>
       <div style="font-size:44px;font-weight:700;font-family:var(--font-display);color:var(--accent-dark);margin-top:4px;">${overallPct.toFixed(1)}%</div>
       <div style="font-size:12px;color:var(--text-muted);">Weighted completion · ${new Date().toLocaleDateString()}</div>
+    </div>
+    <div class="stat-tile-row">
+      <div class="stat-tile"><div class="n">${deltaChip(weekDelta)}</div><div class="l">vs 7 days ago</div></div>
+      <div class="stat-tile"><div class="n">${deltaChip(monthDelta)}</div><div class="l">vs 30 days ago</div></div>
     </div>
     ${tree.map(i=>`
       <div style="padding:9px 0;border-bottom:1px solid var(--border);font-size:13.5px;">
@@ -2381,13 +2426,13 @@ $('btn-view-wbs-report').onclick = async () => {
     });
     printBrandedReport(
       activeConversation.name + ' — Progress Report',
-      'Weighted completion: ' + overallPct.toFixed(1) + '% · ' + new Date().toLocaleDateString(),
+      `Weighted completion: ${overallPct.toFixed(1)}% · This week: ${weekDelta>=0?'+':''}${weekDelta.toFixed(1)}% · This month: ${monthDelta>=0?'+':''}${monthDelta.toFixed(1)}% · ${new Date().toLocaleDateString()}`,
       ['WBS Item', 'Weight', 'Progress'],
       rows
     );
   };
   $('btn-whatsapp-wbs-report').onclick = () => {
-    let text = `*${activeConversation.name} — Progress Report*\n${new Date().toLocaleDateString()}\n\nOverall: ${overallPct.toFixed(1)}%\n\n`;
+    let text = `*${activeConversation.name} — Progress Report*\n${new Date().toLocaleDateString()}\n\nOverall: ${overallPct.toFixed(1)}%\nThis week: ${weekDelta>=0?'+':''}${weekDelta.toFixed(1)}%\nThis month: ${monthDelta>=0?'+':''}${monthDelta.toFixed(1)}%\n\n`;
     tree.forEach(i => { text += `${i.code} ${i.name} (wt ${i.weight_pct}%): ${i.effectivePct}%\n`; i.children.forEach(c => { text += `  ${c.code} ${c.name}: ${c.progress_pct}%\n`; }); });
     window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
   };
