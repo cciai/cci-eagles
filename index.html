@@ -726,10 +726,12 @@
       <div class="ctab active" data-ctab="users">People</div>
       <div class="ctab" data-ctab="projects">Projects &amp; Roles</div>
       <div class="ctab" data-ctab="progress">Progress</div>
+      <div class="ctab" data-ctab="staffperf">Staff Performance</div>
     </div>
     <div class="console-pane" id="cpane-users"></div>
     <div class="console-pane" id="cpane-projects" style="display:none;"></div>
     <div class="console-pane" id="cpane-progress" style="display:none;"></div>
+    <div class="console-pane" id="cpane-staffperf" style="display:none;"></div>
   </div>
 
   <!-- ME (profile + progress + appearance + notifications + console link) -->
@@ -2935,6 +2937,7 @@ document.querySelectorAll('#console-tabs .ctab').forEach(el=>{
     if (tab==='users') renderConsoleUsers();
     if (tab==='projects') renderConsoleProjects();
     if (tab==='progress') renderConsoleProgress();
+    if (tab==='staffperf') renderStaffPerformance();
   };
 });
 function initConsole(){ renderConsoleUsers(); }
@@ -3082,6 +3085,72 @@ async function renderConsoleProgress(){
       <div class="gauge"><div class="gauge-fill ${overallPct>=100?'done':''}" style="width:${overallPct}%"></div></div></div>`;
   }
   pane.innerHTML = html || `<p style="color:var(--text-muted);font-size:13px;">No projects yet.</p>`;
+}
+
+let staffPerfPeriod = 'week';
+async function renderStaffPerformance(){
+  const pane = $('cpane-staffperf');
+  pane.innerHTML = `<div class="cs-heading">Loading…</div>`;
+  try {
+    const [{data:users, error:usersErr}, {data:rows, error:rowsErr}] = await Promise.all([
+      withTimeout(sb.from('ea_users').select('id, name, role').eq('active', true).order('name'), 15000, 'Load staff'),
+      withTimeout(sb.from('ea_task_assignees').select('user_id, progress_pct, status, ea_tasks!inner(due_date, status)').eq('ea_tasks.status', 'active'), 15000, 'Load tasks'),
+    ]);
+    if (usersErr) throw usersErr;
+    if (rowsErr) throw rowsErr;
+
+    let rangeStart = null, rangeEnd = null;
+    if (staffPerfPeriod === 'week') [rangeStart, rangeEnd] = getWeekRange();
+    else if (staffPerfPeriod === 'month') [rangeStart, rangeEnd] = getMonthRange();
+    const todayStr = new Date().toISOString().slice(0,10);
+
+    const byUser = {};
+    (users||[]).forEach(u => { byUser[u.id] = { user: u, assigned: 0, completed: 0, overdue: 0 }; });
+    (rows||[]).forEach(r => {
+      const bucket = byUser[r.user_id];
+      if (!bucket) return;
+      const due = r.ea_tasks?.due_date;
+      if (rangeStart) {
+        if (!due) return;
+        const d = new Date(due);
+        if (d < rangeStart || d > rangeEnd) return;
+      }
+      bucket.assigned++;
+      if (r.status === 'completed') bucket.completed++;
+      else if (due && due < todayStr) bucket.overdue++;
+    });
+
+    const list = Object.values(byUser).map(x => ({
+      ...x, pct: x.assigned ? Math.round((x.completed/x.assigned)*100) : null
+    })).sort((a,b) => (b.overdue - a.overdue) || ((a.pct??101) - (b.pct??101)));
+
+    pane.innerHTML = `
+      <div class="cs-section">
+        <div class="segmented" style="max-width:320px;margin-bottom:6px;">
+          <div class="seg ${staffPerfPeriod==='week'?'active':''}" data-staffperf-period="week">This week</div>
+          <div class="seg ${staffPerfPeriod==='month'?'active':''}" data-staffperf-period="month">This month</div>
+          <div class="seg ${staffPerfPeriod==='all'?'active':''}" data-staffperf-period="all">All time</div>
+        </div>
+        <p style="font-size:11px;color:var(--text-muted);margin:0 0 14px;">Completion % = tasks finished ÷ tasks assigned in this period, including your share of any whole-group tasks. Sorted by whoever needs attention first.</p>
+        ${list.map(x => `
+          <div class="cs-card">
+            <div class="cs-row">
+              <div><strong>${esc(x.user.name)}</strong><div style="font-size:11px;color:var(--text-muted);text-transform:capitalize;">${x.user.role}</div></div>
+              <div style="text-align:right;">
+                <div style="font-family:var(--font-display);font-size:24px;font-weight:700;color:${x.pct===null?'var(--text-muted)':x.pct>=75?'var(--success)':x.pct>=40?'var(--warning)':'var(--danger)'};">${x.pct===null?'—':x.pct+'%'}</div>
+                <div style="font-size:10.5px;color:var(--text-muted);">${x.completed}/${x.assigned} done${x.overdue?` · <span style="color:var(--danger);font-weight:600;">${x.overdue} overdue</span>`:''}</div>
+              </div>
+            </div>
+            ${x.assigned ? `<div class="gauge"><div class="gauge-fill ${x.pct>=100?'done':''}" style="width:${x.pct}%"></div></div>` : `<p style="font-size:11.5px;color:var(--text-muted);margin:6px 0 0;">No tasks assigned in this period.</p>`}
+          </div>`).join('') || `<p style="color:var(--text-muted);font-size:13px;">No staff yet.</p>`}
+      </div>
+    `;
+    pane.querySelectorAll('[data-staffperf-period]').forEach(el=>{
+      el.onclick = () => { staffPerfPeriod = el.getAttribute('data-staffperf-period'); renderStaffPerformance(); };
+    });
+  } catch (e) {
+    pane.innerHTML = `<p style="color:var(--danger);font-size:13px;">Could not load staff performance: ${esc(e.message||e)}</p>`;
+  }
 }
 
 /* ================= ME / SETTINGS ================= */
