@@ -1124,10 +1124,14 @@ async function loadMe(phoneEntered){
       if (createErr) { $('login-status').textContent = 'Could not create profile: ' + createErr.message; return; }
       profile = created;
       if (pending && pending.length) {
-        await sb.from('ea_conversation_members').insert(
+        const { error: enrollErr } = await sb.from('ea_conversation_members').insert(
           pending.map(p => ({ conversation_id: p.conversation_id, user_id: user.id, added_by: p.added_by, role: p.role }))
         );
-        await sb.from('ea_pending_members').delete().eq('phone', phoneEntered || '');
+        if (enrollErr) {
+          console.error('Could not enroll in pending projects:', enrollErr);
+        } else {
+          await sb.from('ea_pending_members').delete().eq('phone', phoneEntered || '');
+        }
       }
     }
     if (profile.active === false) {
@@ -2945,11 +2949,17 @@ function initConsole(){ renderConsoleUsers(); }
 async function renderConsoleUsers(){
   const pane = $('cpane-users');
   pane.innerHTML = `<div class="cs-heading">Loading…</div>`;
-  const [{data:users}, {data:pending}, {data:projects}] = await Promise.all([
+  const [{data:users}, {data:pending}, {data:projects}, {data:memberships}] = await Promise.all([
     sb.from('ea_users').select('*').order('created_at'),
     sb.from('ea_pending_members').select('*, ea_conversations(name)').order('created_at'),
-    sb.from('ea_conversations').select('id,name').eq('kind','site_group').order('name')
+    sb.from('ea_conversations').select('id,name').eq('kind','site_group').order('name'),
+    sb.from('ea_conversation_members').select('user_id, role, ea_conversations(name)'),
   ]);
+  const membershipsByUser = {};
+  (memberships||[]).forEach(m => {
+    if (!membershipsByUser[m.user_id]) membershipsByUser[m.user_id] = [];
+    membershipsByUser[m.user_id].push(`${m.ea_conversations?.name||'?'} (${m.role==='pm'?'PM':'Staff'})`);
+  });
   pane.innerHTML = `
     <div class="stat-tile-row">
       <div class="stat-tile"><div class="n">${(users||[]).length}</div><div class="l">People</div></div>
@@ -2968,9 +2978,11 @@ async function renderConsoleUsers(){
     </div>
     <div class="cs-section"><div class="cs-heading">Team (${(users||[]).length})</div>
       ${(users||[]).map(u=>`<div class="cs-card cs-row">
-        <div><strong>${esc(u.name)}</strong><div style="font-size:12px;color:var(--text-muted);">${esc(u.phone||'')}</div></div>
+        <div><strong>${esc(u.name)}</strong><div style="font-size:12px;color:var(--text-muted);">${esc(u.phone||'')}</div>
+          ${(membershipsByUser[u.id]||[]).length ? `<div style="font-size:11px;color:var(--accent-dark);margin-top:3px;">${membershipsByUser[u.id].map(esc).join(' · ')}</div>` : (u.role!=='owner' ? `<div style="font-size:11px;color:var(--danger);margin-top:3px;">Not on any project</div>` : '')}
+        </div>
         <div style="display:flex;align-items:center;gap:8px;">
-          <span class="role-badge ${u.active===false?'pending':u.role}">${u.active===false?'inactive':u.role}</span>
+          <span class="role-badge ${u.active===false?'pending':u.role}">${u.active===false?'inactive':u.role==='owner'?'owner':'account'}</span>
           ${u.phone!=='9941200159' ? (u.active===false
             ? `<span class="icon-btn" data-restore-user="${u.id}" style="width:28px;height:28px;font-size:11px;color:var(--success);" title="Restore access"><i class="ti ti-rotate"></i></span>`
             : `<span class="icon-btn" data-remove-user="${u.id}" style="width:28px;height:28px;font-size:11px;color:var(--danger);" title="Remove access"><i class="ti ti-user-x"></i></span>`) : ''}
