@@ -513,6 +513,7 @@
     <div class="brandbar-greeting">
       <div class="date" id="greeting-date">—</div>
       <div class="headline" id="greeting-headline">Loading…</div>
+      <div id="owner-perf-summary" style="display:none;font-size:12.5px;color:rgba(255,255,255,0.7);margin-top:6px;"></div>
     </div>
     <div class="view-tabs" id="smart-view-tabs">
       <div class="vtab active" data-smart="today">Today <span class="count" id="cnt-today">0</span></div>
@@ -687,6 +688,10 @@
       <div style="flex:1;overflow-y:auto;padding:0 14px 14px;">
         <div id="pm-items-list"></div>
         <button class="btn secondary" id="btn-add-pm-item" style="margin-top:10px;"><i class="ti ti-plus"></i> Add machine / powertool</button>
+        <div style="display:flex;gap:8px;margin-top:8px;">
+          <button class="btn secondary" id="btn-print-pm" style="margin-top:0;flex:1;"><i class="ti ti-printer"></i> Print / PDF</button>
+          <button class="btn secondary" id="btn-export-pm-csv" style="margin-top:0;flex:1;"><i class="ti ti-file-spreadsheet"></i> Export CSV</button>
+        </div>
       </div>
     </div>
 
@@ -719,8 +724,10 @@
             <button class="btn gold" id="btn-pour-enter" style="width:84px;margin-top:0;">ENTER</button>
           </div>
         </div>
-        <div class="cs-heading" style="margin-top:18px;">Today's entries</div>
+        <div class="cs-heading">Today's entries</div>
         <div id="pour-entries-list"></div>
+        <div class="cs-heading" style="margin-top:22px;">Last 7 days</div>
+        <div id="pour-history-list"></div>
       </div>
     </div>
   </div>
@@ -1327,11 +1334,49 @@ async function renderTasksHome(){
     el.onclick = () => { activeProjectFilter = el.getAttribute('data-pf'); renderTasksHome(); };
   });
 
+  const allFiltered = activeProjectFilter === 'all' ? buckets.all : buckets.all.filter(t=>t.conversation_id === activeProjectFilter);
+  if (me.role === 'owner' || me.role === 'pm') {
+    const doneCount = allFiltered.filter(t => (t.ea_task_assignees||[]).length && (t.ea_task_assignees||[]).every(a=>a.status==='completed')).length;
+    const totalCount = allFiltered.length;
+    const pct = totalCount ? Math.round((doneCount/totalCount)*100) : 0;
+    $('owner-perf-summary').style.display = 'block';
+    $('owner-perf-summary').innerHTML = `<i class="ti ti-chart-bar"></i> <strong style="color:#fff;">${pct}%</strong> complete — ${doneCount} of ${totalCount} tasks`;
+  } else {
+    $('owner-perf-summary').style.display = 'none';
+  }
+
   let list = buckets[activeSmartView] || [];
   if (activeProjectFilter !== 'all') list = list.filter(t=>t.conversation_id === activeProjectFilter);
 
-  if (taskViewMode === 'list') renderTaskListInto('task-list-view', list, true);
-  else renderTaskBoardInto('task-board-view', list, true);
+  if (taskViewMode === 'list') {
+    renderTaskListInto('task-list-view', list, true);
+    const completedList = allFiltered.filter(t => (t.ea_task_assignees||[]).length && (t.ea_task_assignees||[]).every(a=>a.status==='completed'));
+    const completedHtml = `
+      <div id="completed-section-toggle" style="display:flex;align-items:center;gap:8px;padding:14px 4px 8px;cursor:pointer;">
+        <i class="ti ti-chevron-right" id="completed-chevron" style="transition:transform 0.15s ease;"></i>
+        <span style="font-size:13.5px;font-weight:700;color:var(--text-secondary);">Completed</span>
+        <span style="background:var(--bg-raised);color:var(--text-secondary);font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:8px;">${completedList.length}</span>
+      </div>
+      <div id="completed-section-body" style="display:none;"></div>
+    `;
+    $('task-list-view').insertAdjacentHTML('beforeend', completedHtml);
+    $('completed-section-toggle').onclick = () => {
+      const body = $('completed-section-body');
+      const chevron = $('completed-chevron');
+      const willShow = body.style.display === 'none';
+      body.style.display = willShow ? 'block' : 'none';
+      chevron.style.transform = willShow ? 'rotate(90deg)' : 'rotate(0deg)';
+      if (willShow && !body.dataset.rendered) {
+        body.innerHTML = completedList.length ? completedList.map(t=>taskRowHTML(t, true)).join('') : `<p style="font-size:12px;color:var(--text-muted);padding:8px 4px;">No completed tasks here yet.</p>`;
+        body.querySelectorAll('[data-task-id]').forEach(row=>{
+          row.onclick = () => { const t = completedList.find(x=>x.id===row.getAttribute('data-task-id')); openTaskDetail(t); };
+        });
+        body.dataset.rendered = 'true';
+      }
+    };
+  } else {
+    renderTaskBoardInto('task-board-view', list, true);
+  }
 }
 
 function priorityRank(p){ return {urgent:0, high:1, medium:2, low:3}[p] ?? 2; }
@@ -2771,12 +2816,36 @@ $('btn-whatsapp-dlr').onclick = () => {
 
 /* ================= P&M (PLANT & MACHINERY) ================= */
 let pmActiveFilter = 'all';
+let currentPmList = [];
 let pmRepairItemId = null;
 
 async function renderPM(convId){
   const { data: items, error } = await sb.from('ea_pm_items').select('*').eq('conversation_id', convId).order('created_at', {ascending:false});
   if (error) { alert('Could not load P&M: ' + error.message); return; }
   const all = items || [];
+
+  // Auto-raise a "return equipment" task for any rental item on-site more than 3 days, once only.
+  const now = new Date();
+  for (const item of all) {
+    if (item.status === 'rental' && !item.return_task_id) {
+      const daysOn = (now - new Date(item.created_at)) / 86400000;
+      if (daysOn > 3) {
+        try {
+          const { data: task, error: taskErr } = await sb.from('ea_tasks').insert({
+            conversation_id: convId, title: `Return equipment: ${item.name}`,
+            description: 'On rental for more than 3 days - arrange return or confirm still needed.',
+            task_type: 'individual', priority: 'medium', due_date: todayISO(), created_by: me.id
+          }).select().single();
+          if (!taskErr && task) {
+            await sb.from('ea_pm_items').update({ return_task_id: task.id }).eq('id', item.id);
+            item.return_task_id = task.id;
+            await sb.from('ea_messages').insert({ conversation_id: convId, sender_id: me.id, msg_type:'system', content: `Reminder task raised: return "${item.name}" (on rental ${Math.floor(daysOn)} days)` });
+          }
+        } catch (e) { console.error('Could not auto-raise return task', e); }
+      }
+    }
+  }
+
   const counts = {
     all: all.length,
     available: all.filter(i=>i.status==='available').length,
@@ -2794,11 +2863,21 @@ async function renderPM(convId){
   });
 
   const list = pmActiveFilter==='all' ? all : all.filter(i=>i.status===pmActiveFilter);
+  currentPmList = all;
 
   $('pm-items-list').innerHTML = list.length ? list.map(item => {
     let statusLabel = 'ON SITE', spineColor = 'var(--success)', labelColor = 'var(--success)';
     if (item.status==='repair') { statusLabel='IN REPAIR'; spineColor='var(--danger)'; labelColor='var(--danger)'; }
     else if (item.status==='rental') { statusLabel='ON RENTAL'; spineColor='var(--accent)'; labelColor='var(--accent-dark)'; }
+
+    let rentalInfo = '';
+    if (item.status === 'rental') {
+      const daysOn = Math.max(1, Math.ceil((now - new Date(item.created_at)) / 86400000));
+      const runningCost = item.rental_rate_per_day ? (daysOn * Number(item.rental_rate_per_day)) : null;
+      rentalInfo = `<div style="font-size:13px;color:var(--text-secondary);">${item.rental_vendor?esc(item.rental_vendor)+' · ':''}${item.rental_rate_per_day?`₹${item.rental_rate_per_day}/day`:''}</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${daysOn} day${daysOn!==1?'s':''} on rental${runningCost!==null?` · <strong style="color:var(--text-primary);font-family:var(--font-display);font-size:15px;">₹${runningCost.toLocaleString('en-IN')}</strong> so far`:''}</div>
+        ${daysOn > 3 ? `<div style="font-size:11px;color:var(--danger);font-weight:600;margin-top:3px;"><i class="ti ti-alert-triangle"></i> Over 3 days - return task raised</div>` : ''}`;
+    }
 
     let actionButtons = '';
     if (item.status !== 'repair') actionButtons += `<button class="btn secondary small" data-pm-repair="${item.id}" style="margin-top:0;">Mark for repair</button>`;
@@ -2812,7 +2891,7 @@ async function renderPM(convId){
         ${item.code?`<span style="font-size:12px;color:var(--text-muted);">${esc(item.code)}</span>`:''}
       </div>
       <div class="wbs-item-name" style="margin:6px 0 3px;">${esc(item.name)}</div>
-      ${item.status==='rental' ? `<div style="font-size:13px;color:var(--text-secondary);">${item.rental_vendor?esc(item.rental_vendor)+' · ':''}${item.rental_rate_per_day?`<strong style="font-family:var(--font-display);font-size:16px;color:var(--text-primary);">₹${item.rental_rate_per_day}</strong>/day`:''}</div>` : ''}
+      ${rentalInfo}
       ${item.status==='repair' && item.repair_note ? `<div style="font-size:12.5px;color:var(--text-secondary);margin-top:4px;">${esc(item.repair_note)}</div>` : ''}
       <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center;">${actionButtons}</div>
     </div>`;
@@ -2845,6 +2924,40 @@ async function renderPM(convId){
     };
   });
 }
+
+$('btn-print-pm').onclick = () => {
+  const now = new Date();
+  const rows = currentPmList.map(item => {
+    const daysOn = item.status==='rental' ? Math.max(1, Math.ceil((now - new Date(item.created_at)) / 86400000)) : '';
+    const cost = (item.status==='rental' && item.rental_rate_per_day) ? (daysOn * Number(item.rental_rate_per_day)).toLocaleString('en-IN') : '';
+    return [esc(item.name), esc(item.code||'—'), item.status, esc(item.rental_vendor||'—'), item.rental_rate_per_day?('₹'+item.rental_rate_per_day):'—', daysOn||'—', cost?('₹'+cost):'—'];
+  });
+  printBrandedReport(
+    activeConversation.name + ' — Plant & Machinery',
+    `${currentPmList.length} item${currentPmList.length!==1?'s':''} · ${new Date().toLocaleDateString()}`,
+    ['Name', 'Code', 'Status', 'Vendor', 'Rate/day', 'Days on rental', 'Cost so far'],
+    rows
+  );
+};
+$('btn-export-pm-csv').onclick = () => {
+  const now = new Date();
+  const headers = ['Name','Code','Status','Rental Vendor','Rate per day','Days on rental','Cost so far'];
+  const rows = currentPmList.map(item => {
+    const daysOn = item.status==='rental' ? Math.max(1, Math.ceil((now - new Date(item.created_at)) / 86400000)) : '';
+    const cost = (item.status==='rental' && item.rental_rate_per_day) ? (daysOn * Number(item.rental_rate_per_day)) : '';
+    return [item.name, item.code||'', item.status, item.rental_vendor||'', item.rental_rate_per_day||'', daysOn, cost].map(v => `"${String(v).replace(/"/g,'""')}"`).join(',');
+  });
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${activeConversation.name}_PM_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
 
 $('btn-add-pm-item').onclick = () => {
   $('pm-name').value=''; $('pm-code').value=''; $('pm-vendor').value=''; $('pm-rate').value='';
@@ -2918,6 +3031,38 @@ async function initPour(convId){
   renderPourGradeGrid();
   await renderPourEntries(convId);
   await loadRecentPourLocations(convId);
+  await renderPourHistory(convId);
+}
+
+async function renderPourHistory(convId){
+  const since = new Date(); since.setDate(since.getDate()-7);
+  const { data } = await sb.from('ea_concrete_pours').select('pour_date, pour_type, location, grade, quantity').eq('conversation_id', convId).gte('pour_date', pourDateStr(since)).order('pour_date', {ascending:false});
+  const rows = data || [];
+  const byDate = {};
+  rows.forEach(r => {
+    if (!byDate[r.pour_date]) byDate[r.pour_date] = [];
+    byDate[r.pour_date].push(r);
+  });
+  const dates = Object.keys(byDate).sort((a,b)=>b.localeCompare(a));
+  $('pour-history-list').innerHTML = dates.length ? dates.map(d => {
+    const entries = byDate[d];
+    const total = entries.reduce((s,e)=>s+Number(e.quantity),0);
+    return `
+    <div class="cs-card" data-history-date="${d}" style="cursor:pointer;">
+      <div class="cs-row">
+        <strong>${new Date(d+'T00:00:00').toLocaleDateString('en-US',{weekday:'short',day:'numeric',month:'short'})}</strong>
+        <span><strong>${total.toFixed(1)} m³</strong> · ${entries.length} pour${entries.length!==1?'s':''}</span>
+      </div>
+    </div>`;
+  }).join('') : `<p style="font-size:12px;color:var(--text-muted);">No pours in the last 7 days.</p>`;
+  $('pour-history-list').querySelectorAll('[data-history-date]').forEach(card=>{
+    card.onclick = () => {
+      pourCurrentDate = new Date(card.getAttribute('data-history-date') + 'T00:00:00');
+      $('pour-date-heading').textContent = pourCurrentDate.toLocaleDateString('en-US',{weekday:'short',day:'numeric',month:'short'});
+      renderPourGradeGrid();
+      renderPourEntries(convId);
+    };
+  });
 }
 
 function renderPourGradeGrid(){
@@ -2970,6 +3115,7 @@ $('btn-pour-enter').onclick = async () => {
   $('pour-qty-input').value = '';
   await renderPourEntries(activeConversation.id);
   await loadRecentPourLocations(activeConversation.id);
+  await renderPourHistory(activeConversation.id);
 };
 $('pour-qty-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('btn-pour-enter').click(); });
 
