@@ -1619,7 +1619,7 @@ async function renderProjectTasks(){
 }
 
 async function loadMembers(convId){
-  const { data } = await sb.from('ea_conversation_members').select('user_id, role, ea_users(name)').eq('conversation_id', convId);
+  const { data } = await sb.from('ea_conversation_members').select('user_id, role, ea_users!user_id(name)').eq('conversation_id', convId);
   members = data || [];
   const sel = $('task-assignee');
   sel.innerHTML = members.map(m=>`<option value="${m.user_id}">${esc(m.ea_users?.name || 'Member')}</option>`).join('');
@@ -1774,7 +1774,7 @@ async function loadTaskSheetCategories(convId, preselectCategoryId){
   renderCatPicker('task-cat-picker', cats, preselectCategoryId||null, (id)=>{ selectedTaskCategoryId = id; }, convId);
 }
 async function loadAssigneeOptionsFor(convId){
-  const { data } = await sb.from('ea_conversation_members').select('user_id, ea_users(name)').eq('conversation_id', convId);
+  const { data } = await sb.from('ea_conversation_members').select('user_id, ea_users!user_id(name)').eq('conversation_id', convId);
   $('task-assignee').innerHTML = (data||[]).map(m=>`<option value="${m.user_id}">${esc(m.ea_users?.name||'Member')}</option>`).join('');
   return data || [];
 }
@@ -2136,7 +2136,7 @@ $('btn-delete-project').onclick = async () => {
 };
 async function refreshMembersSheet(){
   const canManage = (me.role === 'owner' || me.role === 'pm');
-  const { data: current } = await sb.from('ea_conversation_members').select('user_id, role, ea_users(id, name, phone)').eq('conversation_id', activeConversation.id);
+  const { data: current } = await sb.from('ea_conversation_members').select('user_id, role, ea_users!user_id(id, name, phone)').eq('conversation_id', activeConversation.id);
   const currentIds = new Set((current||[]).map(m=>m.user_id));
   $('members-current-list').innerHTML = (current||[]).map(m => `
     <div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">
@@ -3066,7 +3066,7 @@ async function renderConsoleProjects(){
   const { data: projects } = await sb.from('ea_conversations').select('*').eq('kind','site_group').order('created_at', {ascending:false});
   let html = `<div class="cs-section"><button class="btn gold" id="btn-console-new-project">+ New project</button></div>`;
   for (const proj of (projects||[])) {
-    const { data: mem } = await sb.from('ea_conversation_members').select('user_id, role, ea_users(name, phone)').eq('conversation_id', proj.id);
+    const { data: mem } = await sb.from('ea_conversation_members').select('user_id, role, ea_users!user_id(name, phone)').eq('conversation_id', proj.id);
     html += `<div class="cs-section">
       <div class="cs-heading">${esc(proj.name)}${proj.site?' · '+esc(proj.site):''}</div>
       <div class="cs-card">
