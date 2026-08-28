@@ -933,6 +933,7 @@
       <div class="field"><label>Parent (optional — leave blank for a top-level item)</label><select id="wbs-parent"><option value="">— Top level —</option></select></div>
       <div class="field"><label>Name</label><input type="text" id="wbs-name" placeholder="e.g. Foundation, RCC Frame, Brickwork"></div>
       <div class="field" id="wbs-weight-field"><label>Weight % (share of overall site progress)</label><input type="number" id="wbs-weight" min="0" max="100" placeholder="e.g. 20"></div>
+      <div class="field"><label>Target date (optional)</label><input type="date" id="wbs-target-date"></div>
       <p id="wbs-weight-hint" style="font-size:11px;color:var(--text-muted);margin-top:-4px;">Top-level weights should add up to 100% for an accurate overall %.</p>
       <button class="btn gold" id="btn-create-wbs-item">Add item</button>
       <button class="btn secondary" id="btn-delete-wbs-item" style="display:none;color:var(--danger);border-color:var(--danger-dark);">Delete item</button>
@@ -1454,21 +1455,47 @@ async function computeProjectProgress(convId){
   return { currentPct, weekAgoPct };
 }
 
+async function computeProjectDLR(convId){
+  const todayStr = todayISO();
+  const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+  const yesterdayStr = dlrDateStr(yesterday);
+  const { data } = await sb.from('ea_dlr_entries').select('entry_date, headcount').eq('conversation_id', convId).in('entry_date', [todayStr, yesterdayStr]);
+  let todayTotal = 0, yesterdayTotal = 0, hasToday = false, hasYesterday = false;
+  (data||[]).forEach(r => {
+    if (r.entry_date === todayStr) { todayTotal += r.headcount; hasToday = true; }
+    else if (r.entry_date === yesterdayStr) { yesterdayTotal += r.headcount; hasYesterday = true; }
+  });
+  return { todayTotal, yesterdayTotal, hasToday, hasYesterday };
+}
+
 async function renderProjectsList(){
   const el = $('projects-list');
   if (!conversations.length) { el.innerHTML = `<div class="empty-state"><div class="big"><i class="ti ti-folder"></i></div>No projects yet.</div>`; return; }
-  const progressList = await Promise.all(conversations.map(c => computeProjectProgress(c.id)));
+  const [progressList, dlrList] = await Promise.all([
+    Promise.all(conversations.map(c => computeProjectProgress(c.id))),
+    Promise.all(conversations.map(c => computeProjectDLR(c.id))),
+  ]);
   el.innerHTML = conversations.map((c,i) => {
     const prog = progressList[i];
     const delta = (prog.currentPct!==null && prog.weekAgoPct!==null) ? (prog.currentPct - prog.weekAgoPct) : null;
+    const dlr = dlrList[i];
+    const dlrDelta = dlr.todayTotal - dlr.yesterdayTotal;
     return `
-    <div class="project-card" data-conv="${c.id}">
+    <div class="project-card" data-conv="${c.id}" style="flex-wrap:wrap;">
       <div class="avatar group">${avatarInnerHTML(c.name, c.icon_url)}</div>
       <div class="pc-main"><div class="name">${esc(c.name)}</div><div class="preview">${esc(c.site||'')}</div></div>
       ${prog.currentPct!==null ? `
       <div style="text-align:right;flex-shrink:0;">
         <div style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--accent-dark);">${prog.currentPct.toFixed(1)}%</div>
         ${delta!==null ? `<div style="font-size:11px;font-weight:600;color:${delta>=0?'var(--success)':'var(--danger)'};">${delta>=0?'+':''}${delta.toFixed(1)}% this wk</div>` : ''}
+      </div>` : ''}
+      ${(dlr.hasToday || dlr.hasYesterday) ? `
+      <div style="width:100%;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);">
+        <i class="ti ti-users" style="font-size:14px;"></i>
+        <span><strong style="color:var(--text-primary);">${dlr.todayTotal}</strong> today</span>
+        <span style="color:var(--text-muted);">·</span>
+        <span><strong style="color:var(--text-primary);">${dlr.yesterdayTotal}</strong> yesterday</span>
+        ${dlrDelta!==0 ? `<span style="margin-left:auto;font-weight:600;color:${dlrDelta>0?'var(--success)':'var(--danger)'};">${dlrDelta>0?'+':''}${dlrDelta}</span>` : ''}
       </div>` : ''}
     </div>`;
   }).join('');
@@ -2245,10 +2272,10 @@ function weightedPctAsOfDate(items, updatesByItem, asOfDate){
 
 function buildWbsTree(items){
   const top = items.filter(i=>!i.parent_id).sort((a,b)=> (a.order_index-b.order_index) || (new Date(a.created_at)-new Date(b.created_at)));
-  return top.map((parent, idx) => {
+  return top.map((parent) => {
     const children = items.filter(i=>i.parent_id===parent.id).sort((a,b)=> (a.order_index-b.order_index) || (new Date(a.created_at)-new Date(b.created_at)));
     const effectivePct = children.length ? Math.round(children.reduce((s,c)=>s+c.progress_pct,0)/children.length) : parent.progress_pct;
-    return { ...parent, code: (idx+1)+'.0', children: children.map((c,ci)=>({...c, code:(idx+1)+'.'+(ci+1)})), effectivePct };
+    return { ...parent, code: parent.code, children: children.map(c=>({...c, code: c.code})), effectivePct };
   });
 }
 
@@ -2287,6 +2314,13 @@ async function renderWBS(convId){
       <span class="icon-btn" data-wbs-note="${item.id}" style="width:26px;height:26px;font-size:11px;flex-shrink:0;" title="Add note or photo"><i class="ti ti-camera"></i></span>
     </div>`;
 
+  const targetBadge = (item) => {
+    if (!item.target_date) return '';
+    const today = new Date().toISOString().slice(0,10);
+    const isOverdue = item.target_date < today && item.progress_pct < 100;
+    return `<span style="font-size:10.5px;font-weight:600;color:${isOverdue?'var(--danger)':'var(--text-muted)'};margin-top:4px;display:block;"><i class="ti ti-calendar-due"></i> ${isOverdue?'Overdue - was due':'Target'} ${item.target_date}</span>`;
+  };
+
   let html = '';
   tree.forEach(parent => {
     const hasChildren = parent.children.length > 0;
@@ -2300,6 +2334,7 @@ async function renderWBS(convId){
             ${canManage ? `<span class="icon-btn" data-edit-wbs="${parent.id}" style="width:26px;height:26px;font-size:11px;"><i class="ti ti-pencil"></i></span>` : ''}
           </span>
         </div>
+        ${targetBadge(parent)}
         <div class="gauge"><div class="gauge-fill ${parent.effectivePct>=100?'done':''}" style="width:${parent.effectivePct}%"></div></div>
         ${hasChildren ? `<div style="font-size:11px;color:var(--text-muted);margin-top:8px;">Computed automatically from ${parent.children.length} sub-item${parent.children.length>1?'s':''} below</div>` : inlineSlider(parent)}
       </div>`;
@@ -2313,6 +2348,7 @@ async function renderWBS(convId){
               ${canManage ? `<span class="icon-btn" data-edit-wbs="${child.id}" style="width:24px;height:24px;font-size:10px;"><i class="ti ti-pencil"></i></span>` : ''}
             </span>
           </div>
+          ${targetBadge(child)}
           <div class="gauge"><div class="gauge-fill ${child.progress_pct>=100?'done':''}" style="width:${child.progress_pct}%"></div></div>
           ${inlineSlider(child)}
         </div>`;
@@ -2379,7 +2415,7 @@ $('btn-add-wbs-item').onclick = async () => {
   if (error) throw error;
   editingWbsItemId = null;
   $('wbs-item-sheet-title').textContent = 'New WBS item';
-  $('wbs-name').value = ''; $('wbs-weight').value = ''; $('wbs-parent').value = '';
+  $('wbs-name').value = ''; $('wbs-weight').value = ''; $('wbs-parent').value = ''; $('wbs-target-date').value = '';
   populateWbsParentSelect(items, null);
   $('wbs-weight-field').style.display = 'block';
   $('btn-create-wbs-item').textContent = 'Add item';
@@ -2392,6 +2428,7 @@ function openWbsEditSheet(item, allItems){
   $('wbs-item-sheet-title').textContent = 'Edit WBS item';
   $('wbs-name').value = item.name;
   $('wbs-weight').value = item.weight_pct;
+  $('wbs-target-date').value = item.target_date || '';
   populateWbsParentSelect(allItems, item.id);
   $('wbs-parent').value = item.parent_id || '';
   $('wbs-weight-field').style.display = item.parent_id ? 'none' : 'block';
@@ -2400,16 +2437,34 @@ function openWbsEditSheet(item, allItems){
   toggleSheet('wbs-item-sheet', true);
 }
 $('wbs-parent').onchange = (e) => { $('wbs-weight-field').style.display = e.target.value ? 'none' : 'block'; };
+async function computeNextWbsCode(convId, parentId){
+  if (!parentId) {
+    const { data } = await sb.from('ea_wbs_items').select('code').eq('conversation_id', convId).is('parent_id', null);
+    let maxNum = 0;
+    (data||[]).forEach(r => { const n = parseInt((r.code||'0.0').split('.')[0], 10); if (n > maxNum) maxNum = n; });
+    return (maxNum+1) + '.0';
+  } else {
+    const { data: parent } = await sb.from('ea_wbs_items').select('code').eq('id', parentId).single();
+    const topNum = parent?.code ? parent.code.split('.')[0] : '0';
+    const { data: siblings } = await sb.from('ea_wbs_items').select('code').eq('parent_id', parentId);
+    let maxChild = 0;
+    (siblings||[]).forEach(r => { const n = parseInt((r.code||'0.0').split('.')[1]||'0', 10); if (n > maxChild) maxChild = n; });
+    return topNum + '.' + (maxChild+1);
+  }
+}
+
 $('btn-create-wbs-item').onclick = async () => {
   const name = $('wbs-name').value.trim();
   const parentId = $('wbs-parent').value || null;
   const weight = parentId ? 0 : parseFloat($('wbs-weight').value);
+  const targetDate = $('wbs-target-date').value || null;
   if (!name || (!parentId && (isNaN(weight) || weight < 0 || weight > 100))) { alert('Enter a name, and a weight 0-100 for top-level items'); return; }
   let error;
   if (editingWbsItemId) {
-    ({ error } = await sb.from('ea_wbs_items').update({ name, weight_pct: weight, parent_id: parentId, updated_at: new Date().toISOString() }).eq('id', editingWbsItemId));
+    ({ error } = await sb.from('ea_wbs_items').update({ name, weight_pct: weight, parent_id: parentId, target_date: targetDate, updated_at: new Date().toISOString() }).eq('id', editingWbsItemId));
   } else {
-    ({ error } = await sb.from('ea_wbs_items').insert({ conversation_id: activeConversation.id, name, weight_pct: weight, parent_id: parentId, created_by: me.id }));
+    const code = await computeNextWbsCode(activeConversation.id, parentId);
+    ({ error } = await sb.from('ea_wbs_items').insert({ conversation_id: activeConversation.id, name, weight_pct: weight, parent_id: parentId, target_date: targetDate, code, created_by: me.id }));
   }
   if (error) { alert('Could not save: ' + error.message); return; }
   toggleSheet('wbs-item-sheet', false);
