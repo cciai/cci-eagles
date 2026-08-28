@@ -586,6 +586,9 @@
           <div class="qa-chip" id="qa-assignee-chip">@ Assignee</div>
           <div class="qa-chip" id="qa-today-chip"><i class="ti ti-calendar"></i> Today</div>
           <div class="qa-chip" id="qa-tomorrow-chip"><i class="ti ti-calendar"></i> Tomorrow</div>
+          <div class="qa-chip" id="qa-customdate-chip" style="position:relative;"><i class="ti ti-calendar-due"></i> <span id="qa-customdate-label">Pick date</span>
+            <input type="date" id="qa-customdate-input" style="position:absolute;inset:0;opacity:0;cursor:pointer;">
+          </div>
           <div class="icon-btn send qa-send" id="qa-send"><i class="ti ti-send"></i></div>
         </div>
       </div>
@@ -1855,6 +1858,9 @@ function resetQuickAdd(){
   $('qa-assignee-chip').classList.remove('selected');
   $('qa-today-chip').classList.remove('selected');
   $('qa-tomorrow-chip').classList.remove('selected');
+  $('qa-customdate-chip').classList.remove('selected');
+  $('qa-customdate-label').textContent = 'Pick date';
+  $('qa-customdate-input').value = '';
 }
 $('qa-assignee-chip').onclick = () => {
   const existing = document.getElementById('qa-assignee-dropdown');
@@ -1884,13 +1890,33 @@ $('qa-today-chip').onclick = () => {
   const active = $('qa-today-chip').classList.contains('selected');
   $('qa-today-chip').classList.toggle('selected', !active);
   $('qa-tomorrow-chip').classList.remove('selected');
+  $('qa-customdate-chip').classList.remove('selected');
+  $('qa-customdate-label').textContent = 'Pick date';
+  $('qa-customdate-input').value = '';
   qaDueDate = active ? null : todayISO();
 };
 $('qa-tomorrow-chip').onclick = () => {
   const active = $('qa-tomorrow-chip').classList.contains('selected');
   $('qa-tomorrow-chip').classList.toggle('selected', !active);
   $('qa-today-chip').classList.remove('selected');
+  $('qa-customdate-chip').classList.remove('selected');
+  $('qa-customdate-label').textContent = 'Pick date';
+  $('qa-customdate-input').value = '';
   qaDueDate = active ? null : tomorrowISO();
+};
+$('qa-customdate-input').onchange = (e) => {
+  const val = e.target.value;
+  $('qa-today-chip').classList.remove('selected');
+  $('qa-tomorrow-chip').classList.remove('selected');
+  if (val) {
+    qaDueDate = val;
+    $('qa-customdate-chip').classList.add('selected');
+    $('qa-customdate-label').textContent = new Date(val + 'T00:00:00').toLocaleDateString('en-US', { day:'numeric', month:'short' });
+  } else {
+    qaDueDate = null;
+    $('qa-customdate-chip').classList.remove('selected');
+    $('qa-customdate-label').textContent = 'Pick date';
+  }
 };
 $('qa-send').onclick = async () => {
   const title = $('qa-input').value.trim();
