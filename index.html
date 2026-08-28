@@ -652,7 +652,10 @@
       <input type="date" id="dlr-date-picker" style="display:none;">
       <div style="flex:1;overflow-y:auto;padding:12px 14px 14px;">
         <div id="dlr-entries-list"></div>
-        <button class="btn secondary" id="btn-show-add-trade" style="margin-top:4px;"><i class="ti ti-plus"></i> Add a trade</button>
+        <div style="display:flex;gap:8px;">
+          <button class="btn secondary" id="btn-show-add-trade" style="margin-top:4px;flex:1;"><i class="ti ti-plus"></i> Add a trade</button>
+          <button class="btn secondary" id="btn-copy-yesterday-dlr" style="margin-top:4px;flex:1;"><i class="ti ti-copy"></i> Copy yesterday</button>
+        </div>
         <div class="cs-form" id="dlr-add-form" style="grid-template-columns:1fr;margin-top:10px;display:none;">
           <div>
             <label>Trade / role</label>
@@ -1631,6 +1634,7 @@ async function loadMembers(convId){
 
 /* ---------------- CHAT ---------------- */
 async function loadMessages(convId){
+  renderedMessageIds = new Set();
   const { data } = await sb.from('ea_messages').select('*, ea_users(name, role)').eq('conversation_id', convId).order('created_at');
   $('messages-list').innerHTML = '';
   (data||[]).forEach(renderMessage);
@@ -1646,7 +1650,12 @@ function subscribeMessages(convId){
 }
 function scrollMessagesToBottom(){ const el = $('messages-list'); el.scrollTop = el.scrollHeight; }
 
+let renderedMessageIds = new Set();
 function renderMessage(m){
+  if (m.id) {
+    if (renderedMessageIds.has(m.id)) return;
+    renderedMessageIds.add(m.id);
+  }
   const wrap = document.createElement('div');
   if (m.msg_type === 'system') {
     wrap.className = 'msg system';
@@ -1693,15 +1702,23 @@ $('btn-send-message').onclick = async () => {
   try {
     if (pendingPhotoFile) {
       const url = await uploadPhoto(pendingPhotoFile, activeConversation.id);
-      await sb.from('ea_messages').insert({ conversation_id: activeConversation.id, sender_id: me.id, msg_type:'image', image_url: url, content: text || null });
+      const { data: row } = await sb.from('ea_messages').insert({ conversation_id: activeConversation.id, sender_id: me.id, msg_type:'image', image_url: url, content: text || null }).select('*, ea_users(name, role)').single();
+      if (row) { renderMessage(row); scrollMessagesToBottom(); }
       pendingPhotoFile = null; $('chat-photo-input').value = ''; $('photo-preview-strip').style.display = 'none';
     } else {
-      await sb.from('ea_messages').insert({ conversation_id: activeConversation.id, sender_id: me.id, msg_type:'text', content: text });
+      const { data: row } = await sb.from('ea_messages').insert({ conversation_id: activeConversation.id, sender_id: me.id, msg_type:'text', content: text }).select('*, ea_users(name, role)').single();
+      if (row) { renderMessage(row); scrollMessagesToBottom(); }
     }
     $('input-message').value = '';
   } catch (e) { alert('Could not send: ' + (e.message || e)); }
   finally { $('btn-send-message').style.opacity = '1'; }
 };
+$('input-message').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    $('btn-send-message').click();
+  }
+});
 
 /* ================= CATEGORIES ================= */
 async function fetchCategoriesFor(convId){
@@ -2539,6 +2556,29 @@ $('btn-show-add-trade').onclick = () => {
   if (willShow) renderDlrTradeGrid();
 };
 
+$('btn-copy-yesterday-dlr').onclick = async () => {
+  try {
+    const todayForView = dlrDateStr(dlrCurrentDate);
+    const yesterday = new Date(dlrCurrentDate); yesterday.setDate(yesterday.getDate()-1);
+    const yesterdayStr = dlrDateStr(yesterday);
+
+    const { data: yEntries, error: fetchErr } = await sb.from('ea_dlr_entries').select('trade, subcontractor, headcount').eq('conversation_id', activeConversation.id).eq('entry_date', yesterdayStr);
+    if (fetchErr) throw fetchErr;
+    if (!yEntries || !yEntries.length) { alert("No DLR entries found for yesterday to copy."); return; }
+
+    const { data: existingToday } = await sb.from('ea_dlr_entries').select('id').eq('conversation_id', activeConversation.id).eq('entry_date', todayForView);
+    if (existingToday && existingToday.length) {
+      if (!confirm(`Today already has ${existingToday.length} entr${existingToday.length>1?'ies':'y'}. Add ${yEntries.length} more from yesterday anyway?`)) return;
+    }
+
+    const { error: insertErr } = await sb.from('ea_dlr_entries').insert(
+      yEntries.map(e => ({ conversation_id: activeConversation.id, entry_date: todayForView, trade: e.trade, subcontractor: e.subcontractor, headcount: e.headcount, created_by: me.id }))
+    );
+    if (insertErr) throw insertErr;
+    await renderDLR(activeConversation.id);
+  } catch (e) { alert("Could not copy yesterday's DLR: " + (e.message||e)); }
+};
+
 async function renderDLR(convId){
   const dateStr = dlrDateStr(dlrCurrentDate);
   const isToday = dateStr === todayISO();
@@ -2554,18 +2594,22 @@ async function renderDLR(convId){
   const total = rows.reduce((s,r)=>s+r.headcount,0);
   $('dlr-day-total').textContent = total;
 
+  const canManage = (me.role === 'owner' || me.role === 'pm');
+  const editable = canManage || !submitted;
+
   $('dlr-entries-list').innerHTML = rows.length ? rows.map(r => `
-    <div class="dlr-trade-row ${submitted?'submitted':''}">
+    <div class="dlr-trade-row ${submitted && !canManage ?'submitted':''}">
       <div class="dtr-info"><div class="dtr-trade">${esc(r.trade)}</div>${r.subcontractor?`<div class="dtr-sub">${esc(r.subcontractor)}</div>`:''}</div>
       <div class="dlr-stepper">
-        ${submitted ? `<span style="font-size:16px;font-weight:700;">${r.headcount}</span>` : `
+        ${editable ? `
         <button data-step="-1" data-entry="${r.id}">−</button>
         <span class="count">${r.headcount}</span>
-        <button data-step="1" data-entry="${r.id}">+</button>`}
+        <button data-step="1" data-entry="${r.id}">+</button>` : `<span style="font-size:16px;font-weight:700;">${r.headcount}</span>`}
+        ${canManage ? `<span class="icon-btn" data-delete-entry="${r.id}" style="width:26px;height:26px;font-size:11px;color:var(--danger);margin-left:6px;"><i class="ti ti-trash"></i></span>` : ''}
       </div>
     </div>`).join('') : `<p style="font-size:13px;color:var(--text-muted);padding:8px 0;">No trades logged for this date yet.</p>`;
 
-  if (!submitted) {
+  if (editable) {
     $('dlr-entries-list').querySelectorAll('[data-step]').forEach(btn=>{
       btn.onclick = async () => {
         const delta = parseInt(btn.getAttribute('data-step'),10);
@@ -2577,12 +2621,20 @@ async function renderDLR(convId){
       };
     });
   }
+  $('dlr-entries-list').querySelectorAll('[data-delete-entry]').forEach(btn=>{
+    btn.onclick = async () => {
+      if (!confirm('Remove this entry from the day\'s DLR?')) return;
+      await sb.from('ea_dlr_entries').delete().eq('id', btn.getAttribute('data-delete-entry'));
+      await renderDLR(convId);
+    };
+  });
 
   $('btn-submit-dlr-day').style.display = submitted ? 'none' : 'block';
   $('dlr-submitted-note').innerHTML = submitted
-    ? `<span class="submitted-badge"><i class="ti ti-check"></i> Submitted by ${esc(dayRow.submitted_by===me.id?'you':'')} on ${new Date(dayRow.submitted_at).toLocaleString()}</span>`
+    ? `<span class="submitted-badge"><i class="ti ti-check"></i> Submitted by ${esc(dayRow.submitted_by===me.id?'you':'')} on ${new Date(dayRow.submitted_at).toLocaleString()}</span>${canManage ? `<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">You can still edit or remove entries above as owner/PM.</div>` : ''}`
     : '';
-  $('btn-show-add-trade').style.display = submitted ? 'none' : 'block';
+  $('btn-show-add-trade').style.display = editable ? 'block' : 'none';
+  $('btn-copy-yesterday-dlr').style.display = editable ? 'block' : 'none';
   $('dlr-add-form').style.display = 'none';
 
   // stats
