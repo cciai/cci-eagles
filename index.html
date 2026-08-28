@@ -569,7 +569,7 @@
         <div class="gmeta" id="thread-meta">—</div>
       </div>
       <div class="icon-btn-hdr" id="btn-project-settings" style="display:none;"><i class="ti ti-settings"></i></div>
-      <div class="icon-btn-hdr" id="btn-manage-members" style="display:none;margin-left:auto;"><i class="ti ti-users"></i></div>
+      <div class="icon-btn-hdr" id="btn-manage-members" style="display:flex;margin-left:auto;gap:6px;width:auto;padding:0 10px;border-radius:16px;background:rgba(255,255,255,0.08);" title="See who's on this project"><i class="ti ti-users"></i><span id="team-count-badge" style="font-size:12px;font-weight:700;"></span></div>
     </div>
     <div class="subtabs">
       <div class="subtab active" data-psub="tasks">Tasks</div>
@@ -892,10 +892,10 @@
   <div class="sheet-backdrop" id="members-sheet-backdrop"></div>
   <div class="sheet" id="members-sheet">
     <div class="sheet-handle"></div>
-    <div class="sheet-title"><span>Manage members</span><span class="sheet-close" data-close="members-sheet">✕</span></div>
+    <div class="sheet-title"><span>Team</span><span class="sheet-close" data-close="members-sheet">✕</span></div>
     <div class="sheet-body">
       <div id="members-current-list" style="display:flex;flex-direction:column;gap:8px;"></div>
-      <div style="font-size:12px;color:var(--text-muted);margin:16px 0 6px;text-transform:uppercase;letter-spacing:0.5px;">Add more</div>
+      <div id="members-add-section-heading" style="font-size:12px;color:var(--text-muted);margin:16px 0 6px;text-transform:uppercase;letter-spacing:0.5px;">Add more</div>
       <div id="members-add-list" style="display:flex;flex-direction:column;gap:8px;"></div>
     </div>
   </div>
@@ -1501,11 +1501,12 @@ async function openProject(convId){
   $('thread-meta').textContent = activeConversation.site || '';
   $('proj-header-avatar').innerHTML = avatarInnerHTML(activeConversation.name, activeConversation.icon_url);
   const canManage = (me.role === 'owner' || me.role === 'pm');
-  $('btn-manage-members').style.display = canManage ? 'flex' : 'none';
   $('btn-project-settings').style.display = canManage ? 'flex' : 'none';
   $('btn-change-project-icon').style.display = canManage ? 'flex' : 'none';
   $('proj-avatar-wrap').classList.toggle('editable', canManage);
   $('btn-add-wbs-item').style.display = canManage ? 'inline-flex' : 'none';
+  const { count: teamCount } = await sb.from('ea_conversation_members').select('user_id', { count: 'exact', head: true }).eq('conversation_id', convId);
+  $('team-count-badge').textContent = teamCount || 0;
   show('screen-project');
   document.querySelectorAll('.subtab').forEach(x=>x.classList.remove('active'));
   document.querySelector('[data-psub="tasks"]').classList.add('active');
@@ -2134,20 +2135,29 @@ $('btn-delete-project').onclick = async () => {
   } catch (e) { alert('Could not delete project: ' + (e.message||e)); }
 };
 async function refreshMembersSheet(){
+  const canManage = (me.role === 'owner' || me.role === 'pm');
   const { data: current } = await sb.from('ea_conversation_members').select('user_id, role, ea_users(id, name, phone)').eq('conversation_id', activeConversation.id);
   const currentIds = new Set((current||[]).map(m=>m.user_id));
   $('members-current-list').innerHTML = (current||[]).map(m => `
     <div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">
       <div class="avatar" style="width:36px;height:36px;font-size:12px;">${(m.ea_users?.name||'?').slice(0,2).toUpperCase()}</div>
-      <div style="flex:1;"><div style="font-weight:700;font-size:13.5px;">${esc(m.ea_users?.name)}</div><div style="font-size:11px;color:var(--text-muted);">${m.role} · ${esc(m.ea_users?.phone||'')}</div></div>
-      ${m.user_id !== me.id ? `<div class="icon-btn" data-remove="${m.user_id}" style="width:32px;height:32px;font-size:13px;"><i class="ti ti-x"></i></div>` : ''}
-    </div>`).join('');
+      <div style="flex:1;"><div style="font-weight:700;font-size:13.5px;">${esc(m.ea_users?.name)}</div><div style="font-size:11px;color:var(--text-muted);">${m.role==='pm'?'Project PM':'Staff'} · ${esc(m.ea_users?.phone||'')}</div></div>
+      ${(canManage && m.user_id !== me.id) ? `<div class="icon-btn" data-remove="${m.user_id}" style="width:32px;height:32px;font-size:13px;"><i class="ti ti-x"></i></div>` : ''}
+    </div>`).join('') || `<p style="font-size:13px;color:var(--text-muted);">No one on this project yet.</p>`;
   $('members-current-list').querySelectorAll('[data-remove]').forEach(el => {
     el.onclick = async () => {
       await sb.from('ea_conversation_members').delete().eq('conversation_id', activeConversation.id).eq('user_id', el.getAttribute('data-remove'));
       await refreshMembersSheet(); await loadMembers(activeConversation.id);
+      const { count: teamCount } = await sb.from('ea_conversation_members').select('user_id', { count: 'exact', head: true }).eq('conversation_id', activeConversation.id);
+      $('team-count-badge').textContent = teamCount || 0;
     };
   });
+  if (!canManage) {
+    $('members-add-section-heading').style.display = 'none';
+    $('members-add-list').innerHTML = '';
+    return;
+  }
+  $('members-add-section-heading').style.display = 'block';
   const { data: allUsers } = await sb.from('ea_users').select('id, name, phone').eq('active', true).order('name');
   const addable = (allUsers||[]).filter(u => !currentIds.has(u.id));
   $('members-add-list').innerHTML = addable.length
@@ -2157,6 +2167,8 @@ async function refreshMembersSheet(){
     el.onclick = async () => {
       await sb.from('ea_conversation_members').insert({ conversation_id: activeConversation.id, user_id: el.getAttribute('data-add'), added_by: me.id });
       await refreshMembersSheet(); await loadMembers(activeConversation.id);
+      const { count: teamCount } = await sb.from('ea_conversation_members').select('user_id', { count: 'exact', head: true }).eq('conversation_id', activeConversation.id);
+      $('team-count-badge').textContent = teamCount || 0;
     };
   });
 }
