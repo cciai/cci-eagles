@@ -2121,13 +2121,20 @@ $('qa-send').onclick = async () => {
   if (!title || !activeConversation) return;
   $('qa-send').style.opacity = '0.5';
   try {
+    const taskType = qaAssigneeId ? 'individual' : 'group';
     const { data: task, error } = await sb.from('ea_tasks').insert({
-      conversation_id: activeConversation.id, title, task_type: 'individual',
+      conversation_id: activeConversation.id, title, task_type: taskType,
       priority: 'medium', due_date: qaDueDate, created_by: me.id
     }).select().single();
     if (error) { alert('Could not create task: ' + error.message); return; }
-    if (qaAssigneeId) await sb.from('ea_task_assignees').insert({ task_id: task.id, user_id: qaAssigneeId });
-    await sb.from('ea_messages').insert({ conversation_id: activeConversation.id, sender_id: me.id, msg_type:'system', content: `${me.name} added a task: "${title}"` });
+    if (qaAssigneeId) {
+      await sb.from('ea_task_assignees').insert({ task_id: task.id, user_id: qaAssigneeId });
+    } else {
+      const { data: allMembers } = await sb.from('ea_conversation_members').select('user_id').eq('conversation_id', activeConversation.id);
+      const assigneeIds = (allMembers||[]).map(m=>m.user_id);
+      if (assigneeIds.length) await sb.from('ea_task_assignees').insert(assigneeIds.map(uid => ({ task_id: task.id, user_id: uid })));
+    }
+    await sb.from('ea_messages').insert({ conversation_id: activeConversation.id, sender_id: me.id, msg_type:'system', content: `${me.name} added a task: "${title}"${!qaAssigneeId?' (whole team)':''}` });
     resetQuickAdd();
     renderProjectTasks();
     renderTasksHome();
@@ -2978,9 +2985,12 @@ async function renderPM(convId){
           const { data: task, error: taskErr } = await sb.from('ea_tasks').insert({
             conversation_id: convId, title: `Return equipment: ${item.name}`,
             description: 'On rental for more than 3 days - arrange return or confirm still needed.',
-            task_type: 'individual', priority: 'medium', due_date: todayISO(), created_by: me.id
+            task_type: 'group', priority: 'medium', due_date: todayISO(), created_by: me.id
           }).select().single();
           if (!taskErr && task) {
+            const { data: allMembers } = await sb.from('ea_conversation_members').select('user_id').eq('conversation_id', convId);
+            const assigneeIds = (allMembers||[]).map(m=>m.user_id);
+            if (assigneeIds.length) await sb.from('ea_task_assignees').insert(assigneeIds.map(uid => ({ task_id: task.id, user_id: uid })));
             await sb.from('ea_pm_items').update({ return_task_id: task.id }).eq('id', item.id);
             item.return_task_id = task.id;
             await sb.from('ea_messages').insert({ conversation_id: convId, sender_id: me.id, msg_type:'system', content: `Reminder task raised: return "${item.name}" (on rental ${Math.floor(daysOn)} days)` });
@@ -3147,9 +3157,12 @@ $('btn-confirm-repair').onclick = async () => {
     const due = new Date(); due.setDate(due.getDate()+2);
     const { data: task, error: taskErr } = await sb.from('ea_tasks').insert({
       conversation_id: activeConversation.id, title: `Repair ${item.name}`, description: note||null,
-      task_type: 'individual', priority: 'high', due_date: due.toISOString().slice(0,10), created_by: me.id
+      task_type: 'group', priority: 'high', due_date: due.toISOString().slice(0,10), created_by: me.id
     }).select().single();
     if (taskErr) throw taskErr;
+    const { data: allMembers } = await sb.from('ea_conversation_members').select('user_id').eq('conversation_id', activeConversation.id);
+    const assigneeIds = (allMembers||[]).map(m=>m.user_id);
+    if (assigneeIds.length) await sb.from('ea_task_assignees').insert(assigneeIds.map(uid => ({ task_id: task.id, user_id: uid })));
     const { error } = await sb.from('ea_pm_items').update({ status:'repair', repair_note: note||null, repair_task_id: task.id, updated_at: new Date().toISOString() }).eq('id', pmRepairItemId);
     if (error) throw error;
     await sb.from('ea_messages').insert({ conversation_id: activeConversation.id, sender_id: me.id, msg_type:'system', content: `${me.name} marked "${item.name}" for repair — task created (High priority, due in 2 days)` });
