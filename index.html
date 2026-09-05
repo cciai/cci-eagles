@@ -1762,7 +1762,10 @@ async function renderProjectTasks(){
     sb.from('ea_tasks').select('*, ea_conversations(name), ea_task_assignees(*, ea_users(name))').eq('conversation_id', activeConversation.id).eq('status','active').order('due_date', {ascending:true, nullsFirst:false}),
     fetchCategoriesFor(activeConversation.id)
   ]);
-  const allTasks = tasks || [];
+  const allTasksRaw = tasks || [];
+  const isDone = (t) => (t.ea_task_assignees||[]).length && (t.ea_task_assignees||[]).every(a=>a.status==='completed');
+  const allTasks = allTasksRaw.filter(t => !isDone(t));
+  const completedTasks = allTasksRaw.filter(isDone);
   const canManage = (me.role === 'owner' || me.role === 'pm');
   const groups = categories.map(c => ({ cat: c, tasks: allTasks.filter(t => t.category_id === c.id) }));
   const uncategorized = allTasks.filter(t => !t.category_id);
@@ -1770,7 +1773,7 @@ async function renderProjectTasks(){
 
   if (projTaskViewMode === 'list') {
     const el = $('proj-task-list-view');
-    if (!allTasks.length) { el.innerHTML = `<div class="empty-state"><div class="big"><i class="ti ti-checklist"></i></div>No tasks yet.</div>`; }
+    if (!allTasksRaw.length) { el.innerHTML = `<div class="empty-state"><div class="big"><i class="ti ti-checklist"></i></div>No tasks yet.</div>`; }
     else {
       el.innerHTML = groups.filter(g=>g.tasks.length || g.cat).map(g => `
         <div style="display:flex;align-items:center;gap:8px;padding:12px 4px 8px;">
@@ -1780,16 +1783,37 @@ async function renderProjectTasks(){
           ${canManage?`<span style="margin-left:auto;font-size:12px;color:var(--accent-dark);font-weight:700;cursor:pointer;" data-newtask-cat="${g.cat?g.cat.id:''}">+ New task</span>`:''}
         </div>
         <div>${g.tasks.map(t=>taskRowHTML(t, false)).join('') || `<p style="font-size:12px;color:var(--text-muted);padding:4px 4px 12px;">No tasks in this category.</p>`}</div>
-      `).join('');
+      `).join('') + `
+        <div id="proj-completed-toggle" style="display:flex;align-items:center;gap:8px;padding:14px 4px 8px;cursor:pointer;">
+          <i class="ti ti-chevron-right" id="proj-completed-chevron" style="transition:transform 0.15s ease;"></i>
+          <span style="font-size:13.5px;font-weight:700;color:var(--text-secondary);">Completed</span>
+          <span style="background:var(--bg-raised);color:var(--text-secondary);font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:8px;">${completedTasks.length}</span>
+        </div>
+        <div id="proj-completed-body" style="display:none;"></div>
+      `;
       el.querySelectorAll('[data-task-id]').forEach(row=>{
-        row.onclick = () => { const t = allTasks.find(x=>x.id===row.getAttribute('data-task-id')); openTaskDetail(t); };
+        row.onclick = () => { const t = allTasksRaw.find(x=>x.id===row.getAttribute('data-task-id')); openTaskDetail(t); };
       });
       el.querySelectorAll('[data-quickcomplete]').forEach(cb=>{
-        cb.onclick = (e) => { e.stopPropagation(); quickToggleComplete(cb.getAttribute('data-quickcomplete'), allTasks); };
+        cb.onclick = (e) => { e.stopPropagation(); quickToggleComplete(cb.getAttribute('data-quickcomplete'), allTasksRaw); };
       });
       el.querySelectorAll('[data-newtask-cat]').forEach(btn=>{
         btn.onclick = () => openTaskSheet(activeConversation.id, btn.getAttribute('data-newtask-cat') || null);
       });
+      $('proj-completed-toggle').onclick = () => {
+        const body = $('proj-completed-body');
+        const chevron = $('proj-completed-chevron');
+        const willShow = body.style.display === 'none';
+        body.style.display = willShow ? 'block' : 'none';
+        chevron.style.transform = willShow ? 'rotate(90deg)' : 'rotate(0deg)';
+        if (willShow && !body.dataset.rendered) {
+          body.innerHTML = completedTasks.length ? completedTasks.map(t=>taskRowHTML(t, false)).join('') : `<p style="font-size:12px;color:var(--text-muted);padding:8px 4px;">No completed tasks here yet.</p>`;
+          body.querySelectorAll('[data-task-id]').forEach(row=>{
+            row.onclick = () => { const t = completedTasks.find(x=>x.id===row.getAttribute('data-task-id')); openTaskDetail(t); };
+          });
+          body.dataset.rendered = 'true';
+        }
+      };
     }
   } else {
     const el = $('proj-task-board-view');
@@ -1801,7 +1825,7 @@ async function renderProjectTasks(){
         <div class="board-cards">${g.tasks.map(boardCardHTML).join('') || ''}</div>
       </div>`).join('') : `<div class="empty-state"><div class="big"><i class="ti ti-tag"></i></div>No categories yet.</div>`;
     el.querySelectorAll('[data-task-id]').forEach(card=>{
-      card.onclick = () => { const t = allTasks.find(x=>x.id===card.getAttribute('data-task-id')); openTaskDetail(t); };
+      card.onclick = () => { const t = allTasksRaw.find(x=>x.id===card.getAttribute('data-task-id')); openTaskDetail(t); };
     });
   }
 }
@@ -2183,7 +2207,16 @@ async function renderTaskDetailBody(){
     </div>
     <div class="td-section">
       <div class="td-label">Assignees (${assignees.length})</div>
-      ${assignees.map(a=>`<div class="assignee-row"><div class="ar-name">${esc(a.ea_users?.name||'')}</div><div class="ar-pct">${a.progress_pct}%</div></div>`).join('') || '<p style="font-size:12px;color:var(--text-muted);">Unassigned</p>'}
+      ${assignees.map(a=>`<div class="assignee-row">
+        <div class="ar-name">${esc(a.ea_users?.name||'')}</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="ar-pct" style="color:${a.status==='completed'?'var(--success)':'var(--text-primary)'};">${a.progress_pct}%</div>
+          ${canManage ? (a.status==='completed'
+            ? `<span class="icon-btn" data-reopen-assignee="${a.user_id}" style="width:26px;height:26px;font-size:10px;" title="Reopen"><i class="ti ti-rotate"></i></span>`
+            : `<span class="icon-btn" data-complete-assignee="${a.user_id}" style="width:26px;height:26px;font-size:11px;color:var(--success);" title="Mark done"><i class="ti ti-check"></i></span>`) : ''}
+        </div>
+      </div>`).join('') || '<p style="font-size:12px;color:var(--text-muted);">Unassigned</p>'}
+      ${canManage && assignees.length ? `<button class="btn secondary small" id="btn-mark-task-complete" style="margin-top:10px;">Mark whole task complete</button>` : ''}
     </div>
     ${mine ? `
     <div class="td-section">
@@ -2219,7 +2252,7 @@ async function renderTaskDetailBody(){
         <div class="icon-btn send" id="btn-send-td-comment" style="width:34px;height:34px;"><i class="ti ti-send"></i></div>
       </div>
     </div>
-    ${canManage ? `<button class="btn secondary" id="btn-delete-task" style="color:var(--danger);border-color:var(--danger-dark);">Close / remove task</button>` : ''}
+    ${canManage ? `<button class="btn secondary" id="btn-delete-task" style="color:var(--danger);border-color:var(--danger-dark);">Close task (not completed)</button>` : ''}
   `;
 
   $('td-body').querySelectorAll('[data-view-img]').forEach(img=>{ img.onclick = () => openImageViewer(img.getAttribute('data-view-img')); });
@@ -2255,6 +2288,47 @@ async function renderTaskDetailBody(){
       await sb.from('ea_tasks').update({ status:'closed' }).eq('id', t.id);
       toggleSheet('task-detail-sheet', false);
       renderTasksHome(); if (activeConversation) renderProjectTasks();
+    };
+    document.querySelectorAll('[data-complete-assignee]').forEach(btn=>{
+      btn.onclick = async () => {
+        const uid = btn.getAttribute('data-complete-assignee');
+        try {
+          const { error } = await sb.from('ea_task_assignees').update({ progress_pct: 100, status: 'completed', completed_at: new Date().toISOString() }).eq('task_id', t.id).eq('user_id', uid);
+          if (error) throw error;
+          await sb.from('ea_task_updates').insert({ task_id: t.id, user_id: me.id, progress_pct: 100, note: `Marked complete by ${me.name} (owner/PM)` });
+          const { data: refreshed } = await sb.from('ea_tasks').select('*, ea_conversations(name), ea_task_assignees(*, ea_users(name))').eq('id', t.id).single();
+          activeTaskDetail = refreshed;
+          await renderTaskDetailBody();
+          renderTasksHome(); if (activeConversation) renderProjectTasks();
+        } catch (e) { alert('Could not mark complete: ' + (e.message||e)); }
+      };
+    });
+    document.querySelectorAll('[data-reopen-assignee]').forEach(btn=>{
+      btn.onclick = async () => {
+        const uid = btn.getAttribute('data-reopen-assignee');
+        try {
+          const { error } = await sb.from('ea_task_assignees').update({ status: 'in_progress', completed_at: null }).eq('task_id', t.id).eq('user_id', uid);
+          if (error) throw error;
+          const { data: refreshed } = await sb.from('ea_tasks').select('*, ea_conversations(name), ea_task_assignees(*, ea_users(name))').eq('id', t.id).single();
+          activeTaskDetail = refreshed;
+          await renderTaskDetailBody();
+          renderTasksHome(); if (activeConversation) renderProjectTasks();
+        } catch (e) { alert('Could not reopen: ' + (e.message||e)); }
+      };
+    });
+    const markAllBtn = $('btn-mark-task-complete');
+    if (markAllBtn) markAllBtn.onclick = async () => {
+      if (!confirm('Mark this task complete for everyone assigned?')) return;
+      try {
+        const { error } = await sb.from('ea_task_assignees').update({ progress_pct: 100, status: 'completed', completed_at: new Date().toISOString() }).eq('task_id', t.id);
+        if (error) throw error;
+        await sb.from('ea_task_updates').insert({ task_id: t.id, user_id: me.id, progress_pct: 100, note: `Marked complete by ${me.name} (owner/PM)` });
+        await sb.from('ea_messages').insert({ conversation_id: t.conversation_id, sender_id: me.id, msg_type:'system', content: `${me.name} marked "${t.title}" complete` });
+        const { data: refreshed } = await sb.from('ea_tasks').select('*, ea_conversations(name), ea_task_assignees(*, ea_users(name))').eq('id', t.id).single();
+        activeTaskDetail = refreshed;
+        await renderTaskDetailBody();
+        renderTasksHome(); if (activeConversation) renderProjectTasks();
+      } catch (e) { alert('Could not mark complete: ' + (e.message||e)); }
     };
   } else {
     const current = tdCats.find(c=>c.id===t.category_id);
