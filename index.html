@@ -579,6 +579,7 @@
       <div class="subtab" data-psub="dlr">DLR</div>
       <div class="subtab" data-psub="pm">P&amp;M</div>
       <div class="subtab" data-psub="pour">Pour</div>
+      <div class="subtab" data-psub="hindrance">Hindrance</div>
     </div>
     <div id="pane-project-tasks" style="flex:1;display:flex;flex-direction:column;min-height:0;">
       <div class="quick-add-card">
@@ -651,6 +652,15 @@
         </div>
       </div>
       <input type="date" id="dlr-date-picker" style="display:none;">
+      <div style="padding:10px 14px 0;">
+        <div class="cs-card cs-row" id="dlr-weather-row" style="cursor:pointer;padding:10px 14px;">
+          <div style="display:flex;align-items:center;gap:8px;" id="dlr-weather-display">
+            <i class="ti ti-cloud" style="font-size:16px;color:var(--text-muted);"></i>
+            <span style="font-size:12.5px;color:var(--text-muted);">Tap to log today's weather</span>
+          </div>
+          <i class="ti ti-pencil" style="color:var(--text-muted);font-size:13px;"></i>
+        </div>
+      </div>
       <div style="flex:1;overflow-y:auto;padding:12px 14px 14px;">
         <div id="dlr-entries-list"></div>
         <div style="display:flex;gap:8px;">
@@ -730,6 +740,18 @@
         <div id="pour-history-list"></div>
       </div>
     </div>
+
+    <!-- HINDRANCE PANE -->
+    <div id="pane-project-hindrance" style="flex:1;display:none;flex-direction:column;min-height:0;">
+      <div class="chip-filter-row" id="hindrance-filter-row" style="align-items:center;"></div>
+      <div style="flex:1;overflow-y:auto;padding:0 14px 14px;">
+        <div id="hindrance-list"></div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <button class="btn secondary" id="btn-add-hindrance" style="margin-top:0;flex:1;"><i class="ti ti-plus"></i> Log hindrance</button>
+          <button class="btn secondary" id="btn-hindrance-report" style="margin-top:0;flex:1;"><i class="ti ti-file-report"></i> Report</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- OWNER CONSOLE -->
@@ -740,11 +762,13 @@
       <div class="ctab" data-ctab="projects">Projects &amp; Roles</div>
       <div class="ctab" data-ctab="progress">Progress</div>
       <div class="ctab" data-ctab="staffperf">Staff Performance</div>
+      <div class="ctab" data-ctab="attendance">Attendance</div>
     </div>
     <div class="console-pane" id="cpane-users"></div>
     <div class="console-pane" id="cpane-projects" style="display:none;"></div>
     <div class="console-pane" id="cpane-progress" style="display:none;"></div>
     <div class="console-pane" id="cpane-staffperf" style="display:none;"></div>
+    <div class="console-pane" id="cpane-attendance" style="display:none;"></div>
   </div>
 
   <!-- ME (profile + progress + appearance + notifications + console link) -->
@@ -754,6 +778,17 @@
       <div><div class="p-name" id="settings-name">—</div><div class="p-sub" id="settings-meta">—</div></div>
     </div>
     <div class="console-pane">
+      <div class="cs-section">
+        <div class="cs-heading">Attendance</div>
+        <div class="cs-card" id="attendance-card">
+          <div class="field"><label>Project</label><select id="attendance-project-select"></select></div>
+          <div id="attendance-status-display" style="text-align:center;padding:16px 0 10px;">
+            <div style="font-family:var(--font-display);font-size:15px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--text-muted);" id="attendance-status-label">Not checked in</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:2px;" id="attendance-status-sub">—</div>
+          </div>
+          <div style="display:flex;gap:8px;" id="attendance-action-buttons"></div>
+        </div>
+      </div>
       <div class="cs-section">
         <div class="cs-heading">Your progress</div>
         <div class="segmented" id="progress-period-tabs" style="margin-bottom:12px;max-width:220px;">
@@ -1016,6 +1051,78 @@
       <div style="display:flex;gap:8px;margin-top:14px;">
         <button class="btn secondary" id="btn-print-pour-report" style="margin-top:0;"><i class="ti ti-printer"></i> Print / PDF</button>
         <button class="btn secondary" id="btn-whatsapp-pour-report" style="margin-top:0;"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SHEET: DLR weather -->
+  <div class="sheet-backdrop" id="dlr-weather-sheet-backdrop"></div>
+  <div class="sheet" id="dlr-weather-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title"><span>Today's weather</span><span class="sheet-close" data-close="dlr-weather-sheet">✕</span></div>
+    <div class="sheet-body">
+      <div class="field"><label>Condition</label>
+        <div class="chip-row" id="weather-condition-chips">
+          <div class="chip" data-weather="Sunny">☀️ Sunny</div>
+          <div class="chip" data-weather="Cloudy">☁️ Cloudy</div>
+          <div class="chip" data-weather="Rainy">🌧️ Rainy</div>
+          <div class="chip" data-weather="Stormy">⛈️ Stormy</div>
+          <div class="chip" data-weather="Humid">💧 Humid</div>
+        </div>
+      </div>
+      <div class="field"><label>Temperature (°C)</label><input type="number" id="weather-temp-input" placeholder="e.g. 34"></div>
+      <button class="btn gold" id="btn-save-weather">Save</button>
+    </div>
+  </div>
+
+  <!-- SHEET: staff schedule -->
+  <div class="sheet-backdrop" id="schedule-sheet-backdrop"></div>
+  <div class="sheet" id="schedule-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title"><span id="schedule-sheet-title">Set schedule</span><span class="sheet-close" data-close="schedule-sheet">✕</span></div>
+    <div class="sheet-body">
+      <div class="field"><label>Time in</label><input type="time" id="schedule-in-time" value="09:00"></div>
+      <div class="field"><label>Time out</label><input type="time" id="schedule-out-time" value="18:00"></div>
+      <div class="field"><label>Lunch break start</label><input type="time" id="schedule-lunch-start" value="13:00"></div>
+      <div class="field"><label>Lunch break end</label><input type="time" id="schedule-lunch-end" value="14:00"></div>
+      <button class="btn gold" id="btn-save-schedule">Save schedule</button>
+    </div>
+  </div>
+
+  <!-- SHEET: log hindrance -->
+  <div class="sheet-backdrop" id="hindrance-sheet-backdrop"></div>
+  <div class="sheet" id="hindrance-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title"><span>Log a hindrance</span><span class="sheet-close" data-close="hindrance-sheet">✕</span></div>
+    <div class="sheet-body">
+      <div class="field"><label>Date</label><input type="date" id="hindrance-date-input"></div>
+      <div class="field"><label>Category</label>
+        <div class="chip-row" id="hindrance-category-chips">
+          <div class="chip" data-cat="Client Delay">Client Delay</div>
+          <div class="chip" data-cat="Weather Delay">Weather Delay</div>
+          <div class="chip" data-cat="CCI Delay">CCI Delay</div>
+          <div class="chip" data-cat="Other">Other</div>
+        </div>
+      </div>
+      <div class="field"><label>Reason / description</label><input type="text" id="hindrance-reason-input" placeholder="e.g. Client hold on drawing approval for L3"></div>
+      <div class="field"><label>Hours lost that day</label><input type="number" id="hindrance-hours-input" min="0" step="0.5" placeholder="e.g. 4"></div>
+      <div id="hindrance-photo-preview" style="display:none;margin-bottom:8px;"><img id="hindrance-photo-img" src="" style="width:100%;max-height:160px;object-fit:cover;border-radius:10px;"></div>
+      <button class="btn secondary" id="btn-hindrance-attach-photo" style="margin-top:0;"><i class="ti ti-camera"></i> Add photo (optional)</button>
+      <input type="file" id="hindrance-photo-input" accept="image/*" capture="environment" style="display:none;">
+      <button class="btn gold" id="btn-save-hindrance" style="margin-top:12px;">Save</button>
+    </div>
+  </div>
+
+  <!-- SHEET: hindrance report -->
+  <div class="sheet-backdrop" id="hindrance-report-sheet-backdrop"></div>
+  <div class="sheet" id="hindrance-report-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title"><span>Hindrance report</span><span class="sheet-close" data-close="hindrance-report-sheet">✕</span></div>
+    <div class="sheet-body">
+      <div id="hindrance-report-preview"></div>
+      <div style="display:flex;gap:8px;margin-top:14px;">
+        <button class="btn secondary" id="btn-print-hindrance-report" style="margin-top:0;"><i class="ti ti-printer"></i> Print / PDF</button>
+        <button class="btn secondary" id="btn-export-hindrance-csv" style="margin-top:0;"><i class="ti ti-file-spreadsheet"></i> Export CSV</button>
       </div>
     </div>
   </div>
@@ -1628,12 +1735,14 @@ document.querySelectorAll('.subtab').forEach(el=>{
     $('pane-project-dlr').style.display = sub==='dlr' ? 'flex' : 'none';
     $('pane-project-pm').style.display = sub==='pm' ? 'flex' : 'none';
     $('pane-project-pour').style.display = sub==='pour' ? 'flex' : 'none';
+    $('pane-project-hindrance').style.display = sub==='hindrance' ? 'flex' : 'none';
     if (sub==='tasks') await renderProjectTasks();
     if (sub==='chat') { await loadMessages(activeConversation.id); subscribeMessages(activeConversation.id); }
     if (sub==='progress') await renderWBS(activeConversation.id);
     if (sub==='dlr') await initDLR(activeConversation.id);
     if (sub==='pm') await renderPM(activeConversation.id);
     if (sub==='pour') await initPour(activeConversation.id);
+    if (sub==='hindrance') await renderHindrances(activeConversation.id);
   };
 });
 
@@ -2650,6 +2759,34 @@ async function initDLR(convId){
 }
 $('dlr-prev-day').onclick = () => { dlrCurrentDate.setDate(dlrCurrentDate.getDate()-1); renderDLR(activeConversation.id); };
 $('dlr-next-day').onclick = () => { dlrCurrentDate.setDate(dlrCurrentDate.getDate()+1); renderDLR(activeConversation.id); };
+let weatherSelectedCondition = null;
+$('dlr-weather-row').onclick = async () => {
+  const dateStr = dlrDateStr(dlrCurrentDate);
+  const { data: dayRow } = await sb.from('ea_dlr_days').select('weather_condition, temperature_c').eq('conversation_id', activeConversation.id).eq('entry_date', dateStr).maybeSingle();
+  weatherSelectedCondition = dayRow?.weather_condition || null;
+  $('weather-temp-input').value = dayRow?.temperature_c || '';
+  document.querySelectorAll('#weather-condition-chips .chip').forEach(c=>c.classList.toggle('selected', c.getAttribute('data-weather')===weatherSelectedCondition));
+  toggleSheet('dlr-weather-sheet', true);
+};
+document.querySelectorAll('#weather-condition-chips .chip').forEach(chip=>{
+  chip.onclick = () => {
+    document.querySelectorAll('#weather-condition-chips .chip').forEach(c=>c.classList.remove('selected'));
+    chip.classList.add('selected');
+    weatherSelectedCondition = chip.getAttribute('data-weather');
+  };
+});
+$('btn-save-weather').onclick = async () => {
+  const dateStr = dlrDateStr(dlrCurrentDate);
+  const temp = $('weather-temp-input').value ? parseFloat($('weather-temp-input').value) : null;
+  const { error } = await sb.from('ea_dlr_days').upsert({
+    conversation_id: activeConversation.id, entry_date: dateStr,
+    weather_condition: weatherSelectedCondition, temperature_c: temp
+  }, { onConflict: 'conversation_id,entry_date' });
+  if (error) { alert('Could not save weather: ' + error.message); return; }
+  toggleSheet('dlr-weather-sheet', false);
+  await renderDLR(activeConversation.id);
+};
+
 $('btn-show-add-trade').onclick = () => {
   const willShow = $('dlr-add-form').style.display === 'none';
   $('dlr-add-form').style.display = willShow ? 'grid' : 'none';
@@ -2687,6 +2824,13 @@ async function renderDLR(convId){
 
   const { data: dayRow } = await sb.from('ea_dlr_days').select('*').eq('conversation_id', convId).eq('entry_date', dateStr).maybeSingle();
   const submitted = dayRow && dayRow.submitted;
+
+  const weatherIcons = { Sunny:'☀️', Cloudy:'☁️', Rainy:'🌧️', Stormy:'⛈️', Humid:'💧' };
+  if (dayRow && (dayRow.weather_condition || dayRow.temperature_c)) {
+    $('dlr-weather-display').innerHTML = `<span style="font-size:16px;">${weatherIcons[dayRow.weather_condition]||'🌤️'}</span><span style="font-size:13px;font-weight:600;">${esc(dayRow.weather_condition||'')}${dayRow.temperature_c?` · ${dayRow.temperature_c}°C`:''}</span>`;
+  } else {
+    $('dlr-weather-display').innerHTML = `<i class="ti ti-cloud" style="font-size:16px;color:var(--text-muted);"></i><span style="font-size:12.5px;color:var(--text-muted);">Tap to log today's weather</span>`;
+  }
 
   const { data: entries } = await sb.from('ea_dlr_entries').select('*, ea_users(name)').eq('conversation_id', convId).eq('entry_date', dateStr).order('created_at');
   const rows = entries || [];
@@ -3222,6 +3366,253 @@ $('btn-whatsapp-pour-report').onclick = () => {
   window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
 };
 
+/* ================= HINDRANCE TRACKER ================= */
+let hindranceActiveFilter = 'open';
+let hindranceSelectedCategory = null;
+let hindrancePendingPhoto = null;
+let currentHindranceList = [];
+let currentHindranceReport = null;
+
+async function renderHindrances(convId){
+  const { data, error } = await sb.from('ea_hindrances').select('*, ea_users!created_by(name)').eq('conversation_id', convId).order('hindrance_date', {ascending:false});
+  if (error) { alert('Could not load hindrances: ' + error.message); return; }
+  const all = data || [];
+  const counts = { open: all.filter(h=>h.status==='open').length, closed: all.filter(h=>h.status==='closed').length, all: all.length };
+  $('hindrance-filter-row').innerHTML = `
+    <div class="chip-filter ${hindranceActiveFilter==='open'?'selected':''}" data-hf="open">Open ${counts.open}</div>
+    <div class="chip-filter ${hindranceActiveFilter==='closed'?'selected':''}" data-hf="closed">Closed ${counts.closed}</div>
+    <div class="chip-filter ${hindranceActiveFilter==='all'?'selected':''}" data-hf="all">All ${counts.all}</div>
+  `;
+  $('hindrance-filter-row').querySelectorAll('[data-hf]').forEach(el=>{
+    el.onclick = () => { hindranceActiveFilter = el.getAttribute('data-hf'); renderHindrances(convId); };
+  });
+
+  const list = hindranceActiveFilter==='all' ? all : all.filter(h=>h.status===hindranceActiveFilter);
+  currentHindranceList = all;
+  const canManage = (me.role==='owner'||me.role==='pm');
+  const catColor = { 'Client Delay':'var(--pri-high)', 'Weather Delay':'var(--pri-medium)', 'CCI Delay':'var(--danger)', 'Other':'var(--text-muted)' };
+
+  $('hindrance-list').innerHTML = list.length ? list.map(h => `
+    <div class="wbs-item" style="border-left:4px solid ${catColor[h.category]||'var(--border)'};">
+      <div class="wbs-item-top">
+        <span style="font-family:var(--font-display);font-size:12px;font-weight:600;letter-spacing:0.06em;color:${catColor[h.category]||'var(--text-muted)'};">${esc(h.category).toUpperCase()}</span>
+        <span class="status-chip ${h.status==='closed'?'done':''}">${h.status==='closed'?'Closed':'Open'}</span>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">${h.hindrance_date} · logged by ${esc(h.ea_users?.name||'')}</div>
+      <div style="font-size:14px;font-weight:600;margin:6px 0 3px;">${esc(h.reason)}</div>
+      <div style="font-size:13px;color:var(--text-secondary);"><strong style="font-family:var(--font-display);font-size:16px;color:var(--text-primary);">${h.hours_lost}</strong> hours lost</div>
+      ${h.photo_url ? `<img src="${h.photo_url}" data-view-img="${h.photo_url}" style="width:100%;max-height:160px;object-fit:cover;border-radius:8px;margin-top:8px;cursor:pointer;">` : ''}
+      ${h.status==='closed' && h.resolution_note ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:6px;padding-top:6px;border-top:1px solid var(--border);"><strong>Resolution:</strong> ${esc(h.resolution_note)}</div>` : ''}
+      ${canManage && h.status==='open' ? `<button class="btn secondary small" data-close-hindrance="${h.id}" style="margin-top:10px;">Mark closed</button>` : ''}
+    </div>`).join('') : `<div class="empty-state"><div class="big"><i class="ti ti-alert-circle"></i></div>No hindrances logged.</div>`;
+
+  $('hindrance-list').querySelectorAll('[data-view-img]').forEach(img=>{ img.onclick = () => openImageViewer(img.getAttribute('data-view-img')); });
+  $('hindrance-list').querySelectorAll('[data-close-hindrance]').forEach(btn=>{
+    btn.onclick = async () => {
+      const note = prompt('Resolution note (optional) - how was this closed out?');
+      const { error } = await sb.from('ea_hindrances').update({ status:'closed', closed_by: me.id, closed_at: new Date().toISOString(), resolution_note: note||null }).eq('id', btn.getAttribute('data-close-hindrance'));
+      if (error) { alert('Could not close: ' + error.message); return; }
+      await renderHindrances(convId);
+    };
+  });
+}
+
+$('btn-add-hindrance').onclick = () => {
+  $('hindrance-date-input').value = todayISO();
+  $('hindrance-reason-input').value = '';
+  $('hindrance-hours-input').value = '';
+  hindranceSelectedCategory = null; hindrancePendingPhoto = null;
+  document.querySelectorAll('#hindrance-category-chips .chip').forEach(c=>c.classList.remove('selected'));
+  $('hindrance-photo-preview').style.display = 'none';
+  $('hindrance-photo-input').value = '';
+  toggleSheet('hindrance-sheet', true);
+};
+document.querySelectorAll('#hindrance-category-chips .chip').forEach(chip=>{
+  chip.onclick = () => {
+    document.querySelectorAll('#hindrance-category-chips .chip').forEach(c=>c.classList.remove('selected'));
+    chip.classList.add('selected');
+    hindranceSelectedCategory = chip.getAttribute('data-cat');
+  };
+});
+$('btn-hindrance-attach-photo').onclick = () => $('hindrance-photo-input').click();
+$('hindrance-photo-input').onchange = (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  hindrancePendingPhoto = f;
+  $('hindrance-photo-img').src = URL.createObjectURL(f);
+  $('hindrance-photo-preview').style.display = 'block';
+};
+$('btn-save-hindrance').onclick = async () => {
+  const date = $('hindrance-date-input').value;
+  const reason = $('hindrance-reason-input').value.trim();
+  const hours = parseFloat($('hindrance-hours-input').value);
+  if (!date) { alert('Pick a date'); return; }
+  if (!hindranceSelectedCategory) { alert('Pick a category'); return; }
+  if (!reason) { alert('Describe the reason'); return; }
+  if (isNaN(hours) || hours < 0) { alert('Enter valid hours lost'); return; }
+  try {
+    let photoUrl = null;
+    if (hindrancePendingPhoto) photoUrl = await uploadPhoto(hindrancePendingPhoto, activeConversation.id);
+    const { error } = await sb.from('ea_hindrances').insert({
+      conversation_id: activeConversation.id, hindrance_date: date, category: hindranceSelectedCategory,
+      reason, hours_lost: hours, photo_url: photoUrl, created_by: me.id
+    });
+    if (error) throw error;
+    await sb.from('ea_messages').insert({ conversation_id: activeConversation.id, sender_id: me.id, msg_type:'system', content: `${me.name} logged a hindrance: ${hindranceSelectedCategory} - ${reason} (${hours}h)` });
+    toggleSheet('hindrance-sheet', false);
+    await renderHindrances(activeConversation.id);
+  } catch (e) { alert('Could not save: ' + (e.message||e)); }
+};
+
+$('btn-hindrance-report').onclick = () => {
+  const totalHours = currentHindranceList.reduce((s,h)=>s+Number(h.hours_lost),0);
+  const byCategory = {};
+  currentHindranceList.forEach(h => { byCategory[h.category] = (byCategory[h.category]||0) + Number(h.hours_lost); });
+  currentHindranceReport = { list: currentHindranceList, totalHours, byCategory };
+  $('hindrance-report-preview').innerHTML = `
+    <div style="text-align:center;padding:14px 0;">
+      <div style="font-size:36px;font-weight:700;font-family:var(--font-display);color:var(--danger);">${totalHours.toFixed(1)}h</div>
+      <div style="font-size:12px;color:var(--text-muted);">Total hours lost · ${currentHindranceList.length} hindrance${currentHindranceList.length!==1?'s':''}</div>
+    </div>
+    ${Object.entries(byCategory).map(([c,h])=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;"><span>${esc(c)}</span><strong>${h.toFixed(1)}h</strong></div>`).join('') || '<p style="font-size:13px;color:var(--text-muted);">No hindrances logged.</p>'}
+  `;
+  toggleSheet('hindrance-report-sheet', true);
+};
+$('btn-print-hindrance-report').onclick = () => {
+  if (!currentHindranceReport) return;
+  const rows = currentHindranceReport.list.map(h => [h.hindrance_date, esc(h.category), esc(h.reason), h.hours_lost, h.status]);
+  printBrandedReport(
+    activeConversation.name + ' — Hindrance Report',
+    `Total: ${currentHindranceReport.totalHours.toFixed(1)} hours lost · ${new Date().toLocaleDateString()}`,
+    ['Date', 'Category', 'Reason', 'Hours Lost', 'Status'],
+    rows
+  );
+};
+$('btn-export-hindrance-csv').onclick = () => {
+  if (!currentHindranceReport) return;
+  const headers = ['Date','Category','Reason','Hours Lost','Status'];
+  const rows = currentHindranceReport.list.map(h => [h.hindrance_date, h.category, h.reason, h.hours_lost, h.status].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `${activeConversation.name}_Hindrances_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+};
+
+/* ================= STAFF ATTENDANCE ================= */
+let attendanceSelectedConvId = null;
+
+function captureGeolocation(){
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) { resolve(null); return; }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => resolve(null),
+      { timeout: 10000, maximumAge: 60000 }
+    );
+  });
+}
+
+async function renderAttendanceCard(){
+  if (!me || !conversations.length) {
+    $('attendance-project-select').innerHTML = '<option>No projects</option>';
+    $('attendance-action-buttons').innerHTML = '';
+    return;
+  }
+  $('attendance-project-select').innerHTML = conversations.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
+  if (!attendanceSelectedConvId || !conversations.find(c=>c.id===attendanceSelectedConvId)) attendanceSelectedConvId = conversations[0].id;
+  $('attendance-project-select').value = attendanceSelectedConvId;
+  await refreshAttendanceStatus();
+}
+$('attendance-project-select').onchange = (e) => { attendanceSelectedConvId = e.target.value; refreshAttendanceStatus(); };
+
+async function refreshAttendanceStatus(){
+  const dateStr = todayISO();
+  const { data: entry } = await sb.from('ea_attendance_entries').select('*').eq('user_id', me.id).eq('conversation_id', attendanceSelectedConvId).eq('entry_date', dateStr).maybeSingle();
+
+  let breaks = [];
+  if (entry) {
+    const { data: b } = await sb.from('ea_attendance_breaks').select('*').eq('attendance_entry_id', entry.id).order('break_start');
+    breaks = b || [];
+  }
+  const totalBreakMs = breaks.reduce((s,b) => s + ((b.break_end ? new Date(b.break_end) : new Date()) - new Date(b.break_start)), 0);
+  const activeBreak = breaks.find(b => !b.break_end);
+
+  let label, sub, buttons = [];
+  if (!entry || !entry.mark_in_at) {
+    label = 'Not checked in';
+    sub = 'Mark in when you arrive on site';
+    buttons = [{ id:'btn-mark-in', text:'Mark In', cls:'btn gold' }];
+  } else if (entry.status === 'out') {
+    const workedMs = new Date(entry.mark_out_at) - new Date(entry.mark_in_at) - totalBreakMs;
+    const hrs = (workedMs/3600000).toFixed(1);
+    label = 'Checked out';
+    sub = `In ${new Date(entry.mark_in_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} · Out ${new Date(entry.mark_out_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} · ${hrs}h worked`;
+    buttons = [];
+  } else if (activeBreak) {
+    label = 'On break';
+    sub = `Since ${new Date(activeBreak.break_start).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}`;
+    buttons = [{ id:'btn-end-break', text:'End Break', cls:'btn gold' }, { id:'btn-mark-out', text:'Mark Out', cls:'btn secondary' }];
+  } else {
+    const elapsedMs = new Date() - new Date(entry.mark_in_at) - totalBreakMs;
+    const hrs = (elapsedMs/3600000).toFixed(1);
+    label = 'Checked in';
+    sub = `Since ${new Date(entry.mark_in_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} · ${hrs}h so far`;
+    buttons = [{ id:'btn-start-break', text:'Take a Break', cls:'btn secondary' }, { id:'btn-mark-out', text:'Mark Out', cls:'btn gold' }];
+  }
+
+  $('attendance-status-label').textContent = label;
+  $('attendance-status-sub').textContent = sub;
+  $('attendance-action-buttons').innerHTML = buttons.map(b=>`<button class="${b.cls}" id="${b.id}" style="margin-top:0;flex:1;">${b.text}</button>`).join('') || `<p style="font-size:11.5px;color:var(--text-muted);text-align:center;width:100%;">Done for today.</p>`;
+
+  if ($('btn-mark-in')) $('btn-mark-in').onclick = () => doMarkIn();
+  if ($('btn-start-break')) $('btn-start-break').onclick = () => doStartBreak(entry);
+  if ($('btn-end-break')) $('btn-end-break').onclick = () => doEndBreak(activeBreak);
+  if ($('btn-mark-out')) $('btn-mark-out').onclick = () => doMarkOut(entry, activeBreak);
+}
+
+async function doMarkIn(){
+  const btn = $('btn-mark-in'); if (btn) { btn.disabled = true; btn.textContent = 'Locating…'; }
+  try {
+    const loc = await captureGeolocation();
+    const { error } = await sb.from('ea_attendance_entries').insert({
+      user_id: me.id, conversation_id: attendanceSelectedConvId, entry_date: todayISO(),
+      mark_in_at: new Date().toISOString(), mark_in_lat: loc?.lat||null, mark_in_lng: loc?.lng||null, status: 'in'
+    });
+    if (error) throw error;
+    await refreshAttendanceStatus();
+  } catch (e) { alert('Could not mark in: ' + (e.message||e)); if (btn) { btn.disabled=false; btn.textContent='Mark In'; } }
+}
+async function doStartBreak(entry){
+  try {
+    const { error } = await sb.from('ea_attendance_breaks').insert({ attendance_entry_id: entry.id, break_start: new Date().toISOString() });
+    if (error) throw error;
+    await sb.from('ea_attendance_entries').update({ status: 'on_break' }).eq('id', entry.id);
+    await refreshAttendanceStatus();
+  } catch (e) { alert('Could not start break: ' + (e.message||e)); }
+}
+async function doEndBreak(activeBreak){
+  try {
+    await sb.from('ea_attendance_breaks').update({ break_end: new Date().toISOString() }).eq('id', activeBreak.id);
+    const { data: entry } = await sb.from('ea_attendance_entries').select('id').eq('user_id', me.id).eq('conversation_id', attendanceSelectedConvId).eq('entry_date', todayISO()).single();
+    await sb.from('ea_attendance_entries').update({ status: 'in' }).eq('id', entry.id);
+    await refreshAttendanceStatus();
+  } catch (e) { alert('Could not end break: ' + (e.message||e)); }
+}
+async function doMarkOut(entry, activeBreak){
+  if (!confirm('Mark out for the day?')) return;
+  try {
+    if (activeBreak) await sb.from('ea_attendance_breaks').update({ break_end: new Date().toISOString() }).eq('id', activeBreak.id);
+    const loc = await captureGeolocation();
+    const { error } = await sb.from('ea_attendance_entries').update({
+      mark_out_at: new Date().toISOString(), mark_out_lat: loc?.lat||null, mark_out_lng: loc?.lng||null, status: 'out'
+    }).eq('id', entry.id);
+    if (error) throw error;
+    await refreshAttendanceStatus();
+  } catch (e) { alert('Could not mark out: ' + (e.message||e)); }
+}
+
 /* ================= OWNER CONSOLE ================= */
 document.querySelectorAll('#console-tabs .ctab').forEach(el=>{
   el.onclick = () => {
@@ -3234,6 +3625,7 @@ document.querySelectorAll('#console-tabs .ctab').forEach(el=>{
     if (tab==='projects') renderConsoleProjects();
     if (tab==='progress') renderConsoleProgress();
     if (tab==='staffperf') renderStaffPerformance();
+    if (tab==='attendance') renderConsoleAttendance();
   };
 });
 function initConsole(){ renderConsoleUsers(); }
@@ -3275,6 +3667,7 @@ async function renderConsoleUsers(){
         </div>
         <div style="display:flex;align-items:center;gap:8px;">
           <span class="role-badge ${u.active===false?'pending':u.role}">${u.active===false?'inactive':u.role==='owner'?'owner':'account'}</span>
+          ${u.active!==false && u.role!=='owner' ? `<span class="icon-btn" data-set-schedule="${u.id}" data-schedule-name="${esc(u.name)}" style="width:28px;height:28px;font-size:11px;" title="Set work schedule"><i class="ti ti-clock"></i></span>` : ''}
           ${u.phone!=='9941200159' ? (u.active===false
             ? `<span class="icon-btn" data-restore-user="${u.id}" style="width:28px;height:28px;font-size:11px;color:var(--success);" title="Restore access"><i class="ti ti-rotate"></i></span>`
             : `<span class="icon-btn" data-remove-user="${u.id}" style="width:28px;height:28px;font-size:11px;color:var(--danger);" title="Remove access"><i class="ti ti-user-x"></i></span>`) : ''}
@@ -3307,6 +3700,20 @@ async function renderConsoleUsers(){
       if (error) { alert('Could not restore access: ' + error.message); return; }
       alert('Access restored. Add them back to any projects they need from Projects & Roles.');
       renderConsoleUsers();
+    };
+  });
+  pane.querySelectorAll('[data-set-schedule]').forEach(btn=>{
+    btn.onclick = async () => {
+      const uid = btn.getAttribute('data-set-schedule');
+      const name = btn.getAttribute('data-schedule-name');
+      $('schedule-sheet-title').textContent = `${name}'s schedule`;
+      const { data: existing } = await sb.from('ea_staff_schedules').select('*').eq('user_id', uid).maybeSingle();
+      $('schedule-in-time').value = existing?.in_time?.slice(0,5) || '09:00';
+      $('schedule-out-time').value = existing?.out_time?.slice(0,5) || '18:00';
+      $('schedule-lunch-start').value = existing?.lunch_start?.slice(0,5) || '13:00';
+      $('schedule-lunch-end').value = existing?.lunch_end?.slice(0,5) || '14:00';
+      $('btn-save-schedule').setAttribute('data-for-user', uid);
+      toggleSheet('schedule-sheet', true);
     };
   });
   pane.querySelectorAll('[data-cancel-pending]').forEach(btn=>{
@@ -3392,6 +3799,107 @@ async function renderConsoleProgress(){
 }
 
 let staffPerfPeriod = 'week';
+let attendanceConsoleDate = new Date();
+let currentAttendanceRows = [];
+
+function isLate(markInAt, scheduleInTime){
+  if (!markInAt || !scheduleInTime) return false;
+  const d = new Date(markInAt);
+  const [h,m] = scheduleInTime.split(':').map(Number);
+  return (d.getHours()*60 + d.getMinutes()) > (h*60+m);
+}
+function isEarly(markOutAt, scheduleOutTime){
+  if (!markOutAt || !scheduleOutTime) return false;
+  const d = new Date(markOutAt);
+  const [h,m] = scheduleOutTime.split(':').map(Number);
+  return (d.getHours()*60 + d.getMinutes()) < (h*60+m);
+}
+
+async function renderConsoleAttendance(){
+  const pane = $('cpane-attendance');
+  pane.innerHTML = `<div class="cs-heading">Loading…</div>`;
+  try {
+    const dateStr = dlrDateStr(attendanceConsoleDate);
+    const [{data: entries, error: entriesErr}, {data: schedules}] = await Promise.all([
+      withTimeout(sb.from('ea_attendance_entries').select('*, ea_users!user_id(name), ea_conversations(name)').eq('entry_date', dateStr), 15000, 'Load attendance'),
+      withTimeout(sb.from('ea_staff_schedules').select('*'), 15000, 'Load schedules'),
+    ]);
+    if (entriesErr) throw entriesErr;
+    const scheduleByUser = {};
+    (schedules||[]).forEach(s => { scheduleByUser[s.user_id] = s; });
+
+    const rows = await Promise.all((entries||[]).map(async e => {
+      const { data: breaks } = await sb.from('ea_attendance_breaks').select('*').eq('attendance_entry_id', e.id);
+      const totalBreakMs = (breaks||[]).reduce((s,b)=> s + ((b.break_end?new Date(b.break_end):new Date()) - new Date(b.break_start)), 0);
+      const sched = scheduleByUser[e.user_id] || { in_time:'09:00:00', out_time:'18:00:00' };
+      const late = isLate(e.mark_in_at, sched.in_time);
+      const early = e.mark_out_at ? isEarly(e.mark_out_at, sched.out_time) : false;
+      let hoursWorked = null;
+      if (e.mark_in_at && e.mark_out_at) hoursWorked = (new Date(e.mark_out_at) - new Date(e.mark_in_at) - totalBreakMs)/3600000;
+      return { ...e, breakMs: totalBreakMs, late, early, hoursWorked };
+    }));
+    currentAttendanceRows = rows;
+
+    pane.innerHTML = `
+      <div class="cs-section">
+        <div class="dlr-date-nav" style="margin-bottom:14px;">
+          <div class="dn-btn" id="att-prev-day"><i class="ti ti-chevron-left"></i></div>
+          <div style="font-family:var(--font-display);font-size:16px;font-weight:600;">${attendanceConsoleDate.toLocaleDateString('en-US',{weekday:'long',day:'numeric',month:'short'})}</div>
+          <div class="dn-btn" id="att-next-day"><i class="ti ti-chevron-right"></i></div>
+        </div>
+        ${rows.length ? rows.map(r => `
+          <div class="cs-card">
+            <div class="cs-row">
+              <strong>${esc(r.ea_users?.name||'')}</strong>
+              <span style="font-size:11px;color:var(--text-muted);">${esc(r.ea_conversations?.name||'')}</span>
+            </div>
+            <div style="display:flex;gap:14px;margin-top:6px;font-size:12.5px;">
+              <span>In: <strong style="color:${r.late?'var(--danger)':'var(--text-primary)'};">${r.mark_in_at ? new Date(r.mark_in_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '—'}</strong>${r.late?' (late)':''}</span>
+              <span>Out: <strong style="color:${r.early?'var(--danger)':'var(--text-primary)'};">${r.mark_out_at ? new Date(r.mark_out_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : '—'}</strong>${r.early?' (early)':''}</span>
+            </div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Break: ${Math.round(r.breakMs/60000)} min · ${r.hoursWorked!==null ? r.hoursWorked.toFixed(1)+'h worked' : (r.mark_in_at?'Still on site':'')}</div>
+          </div>
+        `).join('') : `<p style="color:var(--text-muted);font-size:13px;">No attendance marked for this date.</p>`}
+        <div style="display:flex;gap:8px;margin-top:14px;">
+          <button class="btn secondary" id="btn-print-attendance" style="margin-top:0;flex:1;"><i class="ti ti-printer"></i> Print / PDF</button>
+          <button class="btn secondary" id="btn-export-attendance-csv" style="margin-top:0;flex:1;"><i class="ti ti-file-spreadsheet"></i> Export CSV</button>
+        </div>
+      </div>
+    `;
+    $('att-prev-day').onclick = () => { attendanceConsoleDate.setDate(attendanceConsoleDate.getDate()-1); renderConsoleAttendance(); };
+    $('att-next-day').onclick = () => { attendanceConsoleDate.setDate(attendanceConsoleDate.getDate()+1); renderConsoleAttendance(); };
+    $('btn-print-attendance').onclick = () => {
+      const rows2 = currentAttendanceRows.map(r => [esc(r.ea_users?.name||''), esc(r.ea_conversations?.name||''), r.mark_in_at?new Date(r.mark_in_at).toLocaleTimeString():'—', r.mark_out_at?new Date(r.mark_out_at).toLocaleTimeString():'—', Math.round(r.breakMs/60000)+' min', r.hoursWorked!==null?r.hoursWorked.toFixed(1):'—', r.late?'Late':(r.early?'Early out':'On time')]);
+      printBrandedReport(`Attendance — ${dateStr}`, `${currentAttendanceRows.length} entries`, ['Name','Project','In','Out','Break','Hours','Flag'], rows2);
+    };
+    $('btn-export-attendance-csv').onclick = () => {
+      const headers = ['Name','Project','In','Out','Break (min)','Hours Worked','Late','Early Out'];
+      const rows2 = currentAttendanceRows.map(r => [r.ea_users?.name||'', r.ea_conversations?.name||'', r.mark_in_at?new Date(r.mark_in_at).toISOString():'', r.mark_out_at?new Date(r.mark_out_at).toISOString():'', Math.round(r.breakMs/60000), r.hoursWorked!==null?r.hoursWorked.toFixed(2):'', r.late?'Yes':'No', r.early?'Yes':'No'].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
+      const csv = [headers.join(','), ...rows2].join('\n');
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download=`Attendance_${dateStr}.csv`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    };
+  } catch (e) {
+    pane.innerHTML = `<p style="color:var(--danger);font-size:13px;">Could not load attendance: ${esc(e.message||e)}</p>`;
+  }
+}
+
+$('btn-save-schedule').onclick = async () => {
+  const uid = $('btn-save-schedule').getAttribute('data-for-user');
+  const { error } = await sb.from('ea_staff_schedules').upsert({
+    user_id: uid,
+    in_time: $('schedule-in-time').value,
+    out_time: $('schedule-out-time').value,
+    lunch_start: $('schedule-lunch-start').value,
+    lunch_end: $('schedule-lunch-end').value,
+    set_by: me.id,
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'user_id' });
+  if (error) { alert('Could not save schedule: ' + error.message); return; }
+  toggleSheet('schedule-sheet', false);
+};
 async function renderStaffPerformance(){
   const pane = $('cpane-staffperf');
   pane.innerHTML = `<div class="cs-heading">Loading…</div>`;
@@ -3550,6 +4058,7 @@ function renderSettings(){
   const prefs = getNotifPrefs();
   document.querySelectorAll('[data-notif]').forEach(sw=>{ sw.classList.toggle('on', !!prefs[sw.getAttribute('data-notif')]); });
   renderMyProgress();
+  renderAttendanceCard();
 }
 
 $('btn-logout').onclick = async () => {
