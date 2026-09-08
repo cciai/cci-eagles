@@ -1274,6 +1274,7 @@ async function loadMe(phoneEntered){
     $('bottomnav').style.display = 'flex';
     document.body.classList.add('authed');
     await loadConversations();
+    checkMonthlyReminders();
     goNav('tasks');
   } catch (e) {
     $('login-status').textContent = 'Error: ' + (e.message || e);
@@ -1363,6 +1364,43 @@ function printBrandedReport(title, subtitle, tableHeaders, tableRows, totalRow){
   window.onafterprint = () => { document.title = prevTitle; window.onafterprint = null; };
   window.print();
   setTimeout(() => { if (document.title !== prevTitle) document.title = prevTitle; }, 5000);
+}
+
+async function checkMonthlyReminders(){
+  if (!me || me.role !== 'owner') return;
+  const now = new Date();
+  const day = now.getDate();
+  const todayStr = todayISO();
+  let reminders = [];
+  if (day === 16) {
+    reminders = [{ title: 'LABOUR RA Bill Submission', emoji: '📋' }];
+  } else if (day === 1) {
+    reminders = [
+      { title: 'MATERIAL IN/OUT Register Submission', emoji: '📦' },
+      { title: 'Concrete Pour Data Submission', emoji: '🧱' },
+      { title: 'Client Billing Submission', emoji: '💰' },
+    ];
+  } else {
+    return;
+  }
+  for (const conv of conversations) {
+    try {
+      const { data: existing } = await sb.from('ea_tasks').select('id, title').eq('conversation_id', conv.id).eq('due_date', todayStr);
+      const existingTitles = new Set((existing||[]).map(t=>t.title));
+      const { data: allMembers } = await sb.from('ea_conversation_members').select('user_id').eq('conversation_id', conv.id);
+      const assigneeIds = (allMembers||[]).map(m=>m.user_id);
+      for (const r of reminders) {
+        if (existingTitles.has(r.title)) continue;
+        const { data: task, error } = await sb.from('ea_tasks').insert({
+          conversation_id: conv.id, title: r.title, task_type: 'group', priority: 'high',
+          due_date: todayStr, created_by: me.id
+        }).select().single();
+        if (error) { console.error('Could not create reminder task', error); continue; }
+        if (assigneeIds.length) await sb.from('ea_task_assignees').insert(assigneeIds.map(uid => ({ task_id: task.id, user_id: uid })));
+        await sb.from('ea_messages').insert({ conversation_id: conv.id, sender_id: me.id, msg_type:'system', content: `${r.emoji} Monthly reminder: ${r.title} is due today.` });
+      }
+    } catch (e) { console.error('Could not post monthly reminders for', conv.name, e); }
+  }
 }
 
 function avatarInnerHTML(name, iconUrl){
