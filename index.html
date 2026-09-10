@@ -529,6 +529,12 @@
       </div>
     </div>
     <div class="chip-filter-row" id="task-project-filter"></div>
+    <div style="padding:0 14px 8px;">
+      <div style="position:relative;">
+        <i class="ti ti-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:15px;"></i>
+        <input type="text" id="task-search-input" placeholder="Search tasks…" style="width:100%;background:var(--bg-card);border:1px solid var(--border);border-radius:9px;padding:9px 12px 9px 34px;color:var(--text-primary);font-size:14px;outline:none;">
+      </div>
+    </div>
     <div style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column;">
       <div class="task-list-wrap" id="task-list-view"></div>
       <div class="board-wrap" id="task-board-view" style="display:none;"></div>
@@ -599,6 +605,12 @@
         <div class="view-toggle" style="margin-left:auto;">
           <div class="vt active" data-projtaskview="list"><i class="ti ti-list"></i> List</div>
           <div class="vt" data-projtaskview="board"><i class="ti ti-layout-kanban"></i> Board</div>
+        </div>
+      </div>
+      <div style="padding:6px 4px 8px;">
+        <div style="position:relative;">
+          <i class="ti ti-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:15px;"></i>
+          <input type="text" id="proj-task-search-input" placeholder="Search tasks…" style="width:100%;background:var(--bg-card);border:1px solid var(--border);border-radius:9px;padding:9px 12px 9px 34px;color:var(--text-primary);font-size:14px;outline:none;">
         </div>
       </div>
       <div class="task-list-wrap" id="proj-task-list-view"></div>
@@ -1035,22 +1047,45 @@
   </div>
 
   <!-- SHEET: pour report -->
+  <!-- SHEET: edit pour entry (owner/PM full edit) -->
+  <div class="sheet-backdrop" id="pour-edit-sheet-backdrop"></div>
+  <div class="sheet" id="pour-edit-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title"><span>Edit pour entry</span><span class="sheet-close" data-close="pour-edit-sheet">✕</span></div>
+    <div class="sheet-body">
+      <div class="field"><label>Date</label><input type="date" id="pour-edit-date"></div>
+      <div class="field"><label>Type</label>
+        <div class="segmented"><div class="seg" data-pour-edit-type="PCC">PCC</div><div class="seg" data-pour-edit-type="RCC">RCC</div></div>
+      </div>
+      <div class="field"><label>Location of pour</label><input type="text" id="pour-edit-location"></div>
+      <div class="field"><label>Grade</label><input type="text" id="pour-edit-grade" placeholder="e.g. M25"></div>
+      <div class="field"><label>Quantity (m³)</label><input type="number" id="pour-edit-qty" step="0.1" min="0"></div>
+      <button class="btn gold" id="btn-save-pour-edit">Save changes</button>
+      <button class="btn secondary" id="btn-delete-pour-entry" style="margin-top:10px;color:var(--danger);border-color:var(--danger-dark);">Delete entry</button>
+    </div>
+  </div>
+
   <div class="sheet-backdrop" id="pour-report-sheet-backdrop"></div>
   <div class="sheet" id="pour-report-sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-title"><span>Pour report</span><span class="sheet-close" data-close="pour-report-sheet">✕</span></div>
     <div class="sheet-body">
       <div class="chip-row" id="pour-report-range">
-        <div class="chip selected" data-range="today">Today</div>
-        <div class="chip" data-range="week">This week</div>
-        <div class="chip" data-range="month">This month</div>
-        <div class="chip" data-range="last3months">Last 3 months</div>
+        <div class="chip selected" data-range="week">Last week</div>
+        <div class="chip" data-range="15days">Last 15 days</div>
+        <div class="chip" data-range="month">Last month</div>
         <div class="chip" data-range="all">Full project</div>
+        <div class="chip" data-range="custom">Custom range</div>
+      </div>
+      <div id="pour-custom-range-fields" style="display:none;margin-top:10px;display:flex;gap:10px;">
+        <div class="field" style="flex:1;margin-bottom:0;"><label>From</label><input type="date" id="pour-custom-start"></div>
+        <div class="field" style="flex:1;margin-bottom:0;"><label>To</label><input type="date" id="pour-custom-end"></div>
       </div>
       <div id="pour-report-preview" style="margin-top:14px;"></div>
       <div style="display:flex;gap:8px;margin-top:14px;">
-        <button class="btn secondary" id="btn-print-pour-report" style="margin-top:0;"><i class="ti ti-printer"></i> Print / PDF</button>
-        <button class="btn secondary" id="btn-whatsapp-pour-report" style="margin-top:0;"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button>
+        <button class="btn secondary" id="btn-print-pour-report" style="margin-top:0;flex:1;"><i class="ti ti-printer"></i> Print / PDF</button>
+        <button class="btn secondary" id="btn-export-pour-csv" style="margin-top:0;flex:1;"><i class="ti ti-file-spreadsheet"></i> CSV</button>
+        <button class="btn secondary" id="btn-whatsapp-pour-report" style="margin-top:0;flex:1;"><i class="ti ti-brand-whatsapp"></i> WhatsApp</button>
       </div>
     </div>
   </div>
@@ -1170,6 +1205,8 @@ let taskSheetType = 'individual';
 let taskSheetPriority = 'medium';
 let activeSmartView = 'today';
 let activeProjectFilter = 'all';
+let taskSearchQuery = '';
+let projTaskSearchQuery = '';
 let taskViewMode = 'list';
 let projTaskViewMode = 'list';
 let activeTaskDetail = null;
@@ -1479,7 +1516,11 @@ async function renderTasksHome(){
     el.onclick = () => { activeProjectFilter = el.getAttribute('data-pf'); renderTasksHome(); };
   });
 
-  const allFiltered = activeProjectFilter === 'all' ? buckets.all : buckets.all.filter(t=>t.conversation_id === activeProjectFilter);
+  let allFiltered = activeProjectFilter === 'all' ? buckets.all : buckets.all.filter(t=>t.conversation_id === activeProjectFilter);
+  if (taskSearchQuery.trim()) {
+    const qf = taskSearchQuery.trim().toLowerCase();
+    allFiltered = allFiltered.filter(t => (t.title||'').toLowerCase().includes(qf) || (t.description||'').toLowerCase().includes(qf));
+  }
   if (me.role === 'owner' || me.role === 'pm') {
     const doneCount = allFiltered.filter(t => (t.ea_task_assignees||[]).length && (t.ea_task_assignees||[]).every(a=>a.status==='completed')).length;
     const totalCount = allFiltered.length;
@@ -1492,6 +1533,10 @@ async function renderTasksHome(){
 
   let list = buckets[activeSmartView] || [];
   if (activeProjectFilter !== 'all') list = list.filter(t=>t.conversation_id === activeProjectFilter);
+  if (taskSearchQuery.trim()) {
+    const q = taskSearchQuery.trim().toLowerCase();
+    list = list.filter(t => (t.title||'').toLowerCase().includes(q) || (t.description||'').toLowerCase().includes(q));
+  }
 
   if (taskViewMode === 'list') {
     renderTaskListInto('task-list-view', list, true);
@@ -1721,6 +1766,8 @@ async function renderChatList(){
 async function openProject(convId){
   activeConversation = conversations.find(c=>c.id===convId);
   renderSidebarProjects();
+  projTaskSearchQuery = '';
+  $('proj-task-search-input').value = '';
   $('thread-name').textContent = activeConversation.name || '';
   $('thread-meta').textContent = activeConversation.site || '';
   $('proj-header-avatar').innerHTML = avatarInnerHTML(activeConversation.name, activeConversation.icon_url);
@@ -1802,8 +1849,14 @@ async function renderProjectTasks(){
   ]);
   const allTasksRaw = tasks || [];
   const isDone = (t) => (t.ea_task_assignees||[]).length && (t.ea_task_assignees||[]).every(a=>a.status==='completed');
-  const allTasks = allTasksRaw.filter(t => !isDone(t));
-  const completedTasks = allTasksRaw.filter(isDone);
+  let allTasks = allTasksRaw.filter(t => !isDone(t));
+  let completedTasks = allTasksRaw.filter(isDone);
+  if (projTaskSearchQuery.trim()) {
+    const q = projTaskSearchQuery.trim().toLowerCase();
+    const matches = (t) => (t.title||'').toLowerCase().includes(q) || (t.description||'').toLowerCase().includes(q);
+    allTasks = allTasks.filter(matches);
+    completedTasks = completedTasks.filter(matches);
+  }
   const canManage = (me.role === 'owner' || me.role === 'pm');
   const groups = categories.map(c => ({ cat: c, tasks: allTasks.filter(t => t.category_id === c.id) }));
   const uncategorized = allTasks.filter(t => !t.category_id);
@@ -1812,6 +1865,7 @@ async function renderProjectTasks(){
   if (projTaskViewMode === 'list') {
     const el = $('proj-task-list-view');
     if (!allTasksRaw.length) { el.innerHTML = `<div class="empty-state"><div class="big"><i class="ti ti-checklist"></i></div>No tasks yet.</div>`; }
+    else if (!allTasks.length && !completedTasks.length && projTaskSearchQuery.trim()) { el.innerHTML = `<div class="empty-state"><div class="big"><i class="ti ti-search"></i></div>No tasks match "${esc(projTaskSearchQuery.trim())}".</div>`; }
     else {
       el.innerHTML = groups.filter(g=>g.tasks.length || g.cat).map(g => `
         <div style="display:flex;align-items:center;gap:8px;padding:12px 4px 8px;">
@@ -2146,6 +2200,19 @@ document.addEventListener('click', (e) => {
   const dd = document.getElementById('qa-assignee-dropdown');
   if (dd && !$('qa-assignee-chip').contains(e.target)) dd.remove();
 });
+let taskSearchDebounce = null;
+$('task-search-input').addEventListener('input', (e) => {
+  taskSearchQuery = e.target.value;
+  clearTimeout(taskSearchDebounce);
+  taskSearchDebounce = setTimeout(() => renderTasksHome(), 200);
+});
+let projTaskSearchDebounce = null;
+$('proj-task-search-input').addEventListener('input', (e) => {
+  projTaskSearchQuery = e.target.value;
+  clearTimeout(projTaskSearchDebounce);
+  projTaskSearchDebounce = setTimeout(() => renderProjectTasks(), 200);
+});
+
 $('qa-today-chip').onclick = () => {
   const active = $('qa-today-chip').classList.contains('selected');
   $('qa-today-chip').classList.toggle('selected', !active);
@@ -3410,12 +3477,54 @@ async function renderPourEntries(convId){
   }).join('') + `</div>` : `<div class="empty-state"><div class="big"><i class="ti ti-droplet"></i></div>No pours logged for this date yet.</div>`;
 
   $('pour-entries-list').querySelectorAll('[data-pour-edit]').forEach(btn=>{
-    btn.onclick = () => openPourEditPrompt(btn.getAttribute('data-pour-edit'), rows);
+    btn.onclick = () => {
+      const row = rows.find(r=>r.id===btn.getAttribute('data-pour-edit'));
+      if (!row) return;
+      if (me.role==='owner'||me.role==='pm') openPourEditSheet(row);
+      else openPourEditPrompt(row.id, rows);
+    };
   });
   if (me.role==='staff' && rows.some(r=>r.locked_for_staff && r.created_by===me.id)) {
     $('pour-entries-list').insertAdjacentHTML('beforeend', `<p style="font-size:11.5px;color:var(--text-muted);margin-top:8px;">The lock means it's been edited once already — only the owner/PM can change it now.</p>`);
   }
 }
+
+let pourEditingId = null;
+function openPourEditSheet(row){
+  pourEditingId = row.id;
+  $('pour-edit-date').value = row.pour_date;
+  $('pour-edit-location').value = row.location;
+  $('pour-edit-grade').value = row.grade;
+  $('pour-edit-qty').value = row.quantity;
+  document.querySelectorAll('[data-pour-edit-type]').forEach(el=>el.classList.toggle('active', el.getAttribute('data-pour-edit-type')===row.pour_type));
+  toggleSheet('pour-edit-sheet', true);
+}
+document.querySelectorAll('[data-pour-edit-type]').forEach(el=>{
+  el.onclick = () => { document.querySelectorAll('[data-pour-edit-type]').forEach(x=>x.classList.remove('active')); el.classList.add('active'); };
+});
+$('btn-save-pour-edit').onclick = async () => {
+  if (!pourEditingId) return;
+  const type = document.querySelector('[data-pour-edit-type].active')?.getAttribute('data-pour-edit-type');
+  const date = $('pour-edit-date').value;
+  const location = $('pour-edit-location').value.trim();
+  const grade = $('pour-edit-grade').value.trim();
+  const qty = parseFloat($('pour-edit-qty').value);
+  if (!date || !type || !location || !grade || isNaN(qty) || qty < 0) { alert('Fill in all fields with valid values'); return; }
+  const { error } = await sb.from('ea_concrete_pours').update({ pour_date: date, pour_type: type, location, grade, quantity: qty }).eq('id', pourEditingId);
+  if (error) { alert('Could not save: ' + error.message); return; }
+  toggleSheet('pour-edit-sheet', false);
+  await renderPourEntries(activeConversation.id);
+  await renderPourHistory(activeConversation.id);
+};
+$('btn-delete-pour-entry').onclick = async () => {
+  if (!pourEditingId) return;
+  if (!confirm('Delete this pour entry? This cannot be undone.')) return;
+  const { error } = await sb.from('ea_concrete_pours').delete().eq('id', pourEditingId);
+  if (error) { alert('Could not delete: ' + error.message); return; }
+  toggleSheet('pour-edit-sheet', false);
+  await renderPourEntries(activeConversation.id);
+  await renderPourHistory(activeConversation.id);
+};
 
 function openPourEditPrompt(id, rows){
   const row = rows.find(r=>r.id===id);
@@ -3437,26 +3546,36 @@ async function savePourEdit(id, qty){
 
 $('btn-pour-report').onclick = () => {
   toggleSheet('pour-report-sheet', true);
-  generatePourReport('today');
+  generatePourReport('week');
 };
 document.querySelectorAll('#pour-report-range .chip').forEach(el=>{
   el.onclick = () => {
     document.querySelectorAll('#pour-report-range .chip').forEach(x=>x.classList.remove('selected'));
     el.classList.add('selected');
-    generatePourReport(el.getAttribute('data-range'));
+    const range = el.getAttribute('data-range');
+    $('pour-custom-range-fields').style.display = range === 'custom' ? 'flex' : 'none';
+    if (range !== 'custom') generatePourReport(range);
   };
 });
+$('pour-custom-start').onchange = () => { if ($('pour-custom-start').value && $('pour-custom-end').value) generatePourReport('custom'); };
+$('pour-custom-end').onchange = () => { if ($('pour-custom-start').value && $('pour-custom-end').value) generatePourReport('custom'); };
 
 async function generatePourReport(range){
   const today = new Date();
-  let start = null;
-  if (range==='today') start = new Date(today);
-  else if (range==='week') { start = new Date(today); start.setDate(start.getDate()-7); }
-  else if (range==='month') { start = new Date(today.getFullYear(), today.getMonth(), 1); }
-  else if (range==='last3months') { start = new Date(today); start.setMonth(start.getMonth()-3); }
+  let start = null, end = null;
+  if (range==='week') { start = new Date(today); start.setDate(start.getDate()-7); }
+  else if (range==='15days') { start = new Date(today); start.setDate(start.getDate()-15); }
+  else if (range==='month') { start = new Date(today); start.setDate(start.getDate()-30); }
+  else if (range==='custom') {
+    const s = $('pour-custom-start').value, e = $('pour-custom-end').value;
+    if (!s || !e) return;
+    start = new Date(s + 'T00:00:00'); end = new Date(e + 'T00:00:00');
+  }
+  // range === 'all' leaves start/end null (no filter)
 
   let query = sb.from('ea_concrete_pours').select('*, ea_users(name)').eq('conversation_id', activeConversation.id).order('pour_date', {ascending:false});
   if (start) query = query.gte('pour_date', pourDateStr(start));
+  if (end) query = query.lte('pour_date', pourDateStr(end));
   const { data, error } = await query;
   if (error) { $('pour-report-preview').innerHTML = `<p style="color:var(--danger);font-size:13px;">${error.message}</p>`; return; }
   const rows = data || [];
@@ -3489,6 +3608,18 @@ $('btn-whatsapp-pour-report').onclick = () => {
   let text = `*${activeConversation.name} — Concrete Pour Report*\n${currentPourReport.range}\n\nTotal: ${currentPourReport.totalQty.toFixed(1)} m³ (${currentPourReport.rows.length} pours)\n\n`;
   Object.entries(currentPourReport.byGrade).forEach(([g,q]) => { text += `${g}: ${q.toFixed(1)} m³\n`; });
   window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+};
+$('btn-export-pour-csv').onclick = () => {
+  if (!currentPourReport) return;
+  const headers = ['Date','Type','Location','Grade','Quantity (m³)','Logged by'];
+  const rows2 = currentPourReport.rows.map(r => [r.pour_date, r.pour_type, r.location, r.grade, r.quantity, r.ea_users?.name||''].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
+  const csv = [headers.join(','), ...rows2].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `${activeConversation.name}_Pour_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 };
 
 /* ================= HINDRANCE TRACKER ================= */
