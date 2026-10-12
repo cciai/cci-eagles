@@ -736,6 +736,8 @@
           <div class="cs-heading">Location of pour</div>
           <input type="text" id="pour-location-input" placeholder="e.g. L3 slab, Grid C-F" style="width:100%;background:var(--bg-card-2);border:1px solid var(--border);border-radius:9px;padding:11px 13px;color:var(--text-primary);font-size:15px;font-weight:600;margin-bottom:8px;">
           <div class="chip-row" id="pour-recent-locations" style="margin-bottom:14px;"></div>
+          <div class="cs-heading">Member</div>
+          <div id="pour-member-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px;"></div>
           <div class="cs-heading">Grade</div>
           <div id="pour-grade-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:14px;"></div>
           <div class="cs-heading">Quantity (m³)</div>
@@ -1062,6 +1064,7 @@
         <div class="segmented"><div class="seg" data-pour-edit-type="PCC">PCC</div><div class="seg" data-pour-edit-type="RCC">RCC</div></div>
       </div>
       <div class="field"><label>Location of pour</label><input type="text" id="pour-edit-location"></div>
+      <div class="field"><label>Member</label><select id="pour-edit-member"></select></div>
       <div class="field"><label>Grade</label><input type="text" id="pour-edit-grade" placeholder="e.g. M25"></div>
       <div class="field"><label>Quantity (m³)</label><input type="number" id="pour-edit-qty" step="0.1" min="0"></div>
       <button class="btn gold" id="btn-save-pour-edit">Save changes</button>
@@ -3105,7 +3108,7 @@ async function renderDLR(convId){
   `).join('') : `<p style="font-size:12px;color:var(--text-muted);">No history yet.</p>`;
 }
 
-const DLR_TRADES = ['Masons','Helpers','Carpenters','Carp Helpers','Steel fitters','St helpers','Electrician','Operators','Others'];
+const DLR_TRADES = ['Foreman','Masons','Helpers','Carpenters','Carp Helpers','Steel fitters','St helpers','Electrician','Operators','Others'];
 let dlrSelectedTrade = null;
 function renderDlrTradeGrid(){
   dlrSelectedTrade = null;
@@ -3378,6 +3381,8 @@ let pourCurrentDate = new Date();
 let pourSelectedGrade = null;
 let currentPourReport = null;
 let currentDlrEntries = [];
+const POUR_MEMBERS = ['Column','Retaining Wall','Slab','Raft','Footing','Plinth Beam','Beam','Shear Wall','Staircase','Lift Core','Other'];
+let pourSelectedMember = null;
 const CONCRETE_GRADES = ['M10','M15','M20','M25','M30','M35','M40','M45','M50'];
 
 function pourDateStr(d){ return d.toISOString().slice(0,10); }
@@ -3385,7 +3390,7 @@ function pourDateStr(d){ return d.toISOString().slice(0,10); }
 async function initPour(convId){
   pourCurrentDate = new Date();
   $('pour-date-heading').textContent = pourCurrentDate.toLocaleDateString('en-US',{weekday:'short',day:'numeric',month:'short'});
-  renderPourGradeGrid();
+  renderPourGradeGrid(); renderPourMemberGrid();
   await renderPourEntries(convId);
   await loadRecentPourLocations(convId);
   await renderPourHistory(convId);
@@ -3393,7 +3398,7 @@ async function initPour(convId){
 
 async function renderPourHistory(convId){
   const since = new Date(); since.setDate(since.getDate()-7);
-  const { data } = await sb.from('ea_concrete_pours').select('pour_date, pour_type, location, grade, quantity').eq('conversation_id', convId).gte('pour_date', pourDateStr(since)).order('pour_date', {ascending:false});
+  const { data } = await sb.from('ea_concrete_pours').select('pour_date, pour_type, location, member, grade, quantity').eq('conversation_id', convId).gte('pour_date', pourDateStr(since)).order('pour_date', {ascending:false});
   const rows = data || [];
   const byDate = {};
   rows.forEach(r => {
@@ -3422,6 +3427,34 @@ async function renderPourHistory(convId){
   });
 }
 
+function renderPourMemberGrid(){
+  pourSelectedMember = null;
+  const g = $('pour-member-grid');
+  g.innerHTML = POUR_MEMBERS.map(m=>`<div data-member="${m}" style="text-align:center;padding:10px 4px;border:1px ${m==='Other'?'dashed':'solid'} var(--border);border-radius:4px;font-size:13px;font-weight:600;cursor:pointer;">${m}</div>`).join('');
+  g.querySelectorAll('[data-member]').forEach(el=>{
+    el.onclick = () => {
+      g.querySelectorAll('[data-member]').forEach(x=>{ x.style.borderColor='var(--border)'; x.style.background='transparent'; x.style.color='var(--text-primary)'; x.style.borderWidth='1px'; });
+      let m = el.getAttribute('data-member');
+      if (m === 'Other') { const c = prompt('Enter member (e.g. Water tank, Ramp)'); if (!c || !c.trim()) return; m = c.trim(); el.textContent = m; }
+      el.style.borderColor='var(--accent)'; el.style.borderWidth='2px'; el.style.background='color-mix(in srgb, var(--accent) 12%, transparent)'; el.style.color='var(--accent-dark)';
+      pourSelectedMember = m;
+    };
+  });
+}
+function fillPourEditMembers(cur){
+  const list = POUR_MEMBERS.filter(m=>m!=='Other');
+  if (cur && !list.includes(cur)) list.push(cur);
+  list.push('Other…');
+  const sel = $('pour-edit-member');
+  sel.innerHTML = `<option value="">— select —</option>` + list.map(m=>`<option value="${esc(m)}">${esc(m)}</option>`).join('');
+  sel.value = cur || '';
+  sel.onchange = () => {
+    if (sel.value !== 'Other…') return;
+    const c = prompt('Enter member (e.g. Water tank, Ramp)');
+    if (c && c.trim()) { const o = document.createElement('option'); o.value = o.textContent = c.trim(); sel.insertBefore(o, sel.lastElementChild); sel.value = c.trim(); }
+    else sel.value = cur || '';
+  };
+}
 function renderPourGradeGrid(){
   pourSelectedGrade = null;
   $('pour-grade-grid').innerHTML = CONCRETE_GRADES.map(g=>`<div class="pp" data-grade="${g}" style="text-align:center;padding:10px 0;border:1px solid var(--border);border-radius:4px;font-family:var(--font-display);font-size:14px;font-weight:600;cursor:pointer;">${g}</div>`).join('')
@@ -3462,14 +3495,16 @@ $('btn-pour-enter').onclick = async () => {
   const location = $('pour-location-input').value.trim();
   const qty = parseFloat($('pour-qty-input').value);
   if (!location) { alert('Enter the pour location'); return; }
+  if (!pourSelectedMember) { alert('Pick the member (Column, Slab, Footing...)'); return; }
   if (!pourSelectedGrade) { alert('Pick a grade'); return; }
   if (isNaN(qty) || qty <= 0) { alert('Enter a valid quantity'); return; }
   const { error } = await sb.from('ea_concrete_pours').insert({
     conversation_id: activeConversation.id, pour_date: pourDateStr(pourCurrentDate), pour_type: pourActiveType,
-    location, grade: pourSelectedGrade, quantity: qty, created_by: me.id
+    location, member: pourSelectedMember, grade: pourSelectedGrade, quantity: qty, created_by: me.id
   });
   if (error) { alert('Could not save: ' + error.message); return; }
   $('pour-qty-input').value = '';
+  renderPourMemberGrid();
   await renderPourEntries(activeConversation.id);
   await loadRecentPourLocations(activeConversation.id);
   await renderPourHistory(activeConversation.id);
@@ -3490,7 +3525,7 @@ async function renderPourEntries(convId){
       <span style="font-family:var(--font-display);font-size:12px;font-weight:600;letter-spacing:0.06em;border:1px solid var(--border);border-radius:2px;padding:2px 6px;flex-shrink:0;">${r.pour_type}</span>
       <div style="flex:1;min-width:0;">
         <div style="font-size:14px;font-weight:700;">${esc(r.location)}</div>
-        <div style="font-size:11.5px;color:var(--text-muted);">${esc(r.grade)} · ${new Date(r.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} · ${esc(r.ea_users?.name||'')}</div>
+        <div style="font-size:11.5px;color:var(--text-muted);">${r.member?esc(r.member)+' · ':''}${esc(r.grade)} · ${new Date(r.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} · ${esc(r.ea_users?.name||'')}</div>
       </div>
       <span style="font-family:var(--font-display);font-size:17px;font-weight:600;">${Number(r.quantity).toFixed(1)}</span>
       ${canEdit ? `<span class="icon-btn" data-pour-edit="${r.id}" style="width:28px;height:28px;font-size:11px;"><i class="ti ti-pencil"></i></span>` : `<span style="color:var(--text-muted);"><i class="ti ti-lock"></i></span>`}
@@ -3515,6 +3550,7 @@ function openPourEditSheet(row){
   pourEditingId = row.id;
   $('pour-edit-date').value = row.pour_date;
   $('pour-edit-location').value = row.location;
+  fillPourEditMembers(row.member);
   $('pour-edit-grade').value = row.grade;
   $('pour-edit-qty').value = row.quantity;
   document.querySelectorAll('[data-pour-edit-type]').forEach(el=>el.classList.toggle('active', el.getAttribute('data-pour-edit-type')===row.pour_type));
@@ -3528,10 +3564,11 @@ $('btn-save-pour-edit').onclick = async () => {
   const type = document.querySelector('[data-pour-edit-type].active')?.getAttribute('data-pour-edit-type');
   const date = $('pour-edit-date').value;
   const location = $('pour-edit-location').value.trim();
+  const member = $('pour-edit-member').value;
   const grade = $('pour-edit-grade').value.trim();
   const qty = parseFloat($('pour-edit-qty').value);
-  if (!date || !type || !location || !grade || isNaN(qty) || qty < 0) { alert('Fill in all fields with valid values'); return; }
-  const { error } = await sb.from('ea_concrete_pours').update({ pour_date: date, pour_type: type, location, grade, quantity: qty }).eq('id', pourEditingId);
+  if (!date || !type || !location || !member || !grade || isNaN(qty) || qty < 0) { alert('Fill in all fields with valid values'); return; }
+  const { error } = await sb.from('ea_concrete_pours').update({ pour_date: date, pour_type: type, location, member, grade, quantity: qty }).eq('id', pourEditingId);
   if (error) { alert('Could not save: ' + error.message); return; }
   toggleSheet('pour-edit-sheet', false);
   await renderPourEntries(activeConversation.id);
@@ -3603,8 +3640,10 @@ async function generatePourReport(range){
   const totalQty = rows.reduce((s,r)=>s+Number(r.quantity),0);
   const byGrade = {};
   rows.forEach(r => { byGrade[r.grade] = (byGrade[r.grade]||0) + Number(r.quantity); });
+  const byMember = {};
+  rows.forEach(r => { const k = r.member || 'Not specified'; byMember[k] = (byMember[k]||0) + Number(r.quantity); });
 
-  currentPourReport = { range, rows, totalQty, byGrade };
+  currentPourReport = { range, rows, totalQty, byGrade, byMember };
 
   $('pour-report-preview').innerHTML = `
     <div style="text-align:center;padding:14px 0;">
@@ -3612,6 +3651,7 @@ async function generatePourReport(range){
       <div style="font-size:12px;color:var(--text-muted);">${rows.length} pour${rows.length!==1?'s':''} total</div>
     </div>
     ${Object.entries(byGrade).map(([g,q])=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;"><span>${esc(g)}</span><strong>${q.toFixed(1)} m³</strong></div>`).join('') || '<p style="font-size:13px;color:var(--text-muted);">No entries in this range.</p>'}
+    ${rows.length ? `<div style="font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--text-muted);margin:14px 0 4px;">BY MEMBER</div>` + Object.entries(byMember).sort((a,b)=>b[1]-a[1]).map(([g,q])=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;"><span>${esc(g)}</span><strong>${q.toFixed(1)} m³</strong></div>`).join('') : ''}
   `;
 }
 
@@ -3620,20 +3660,22 @@ $('btn-print-pour-report').onclick = () => {
   printBrandedReport(
     activeConversation.name + ' — Concrete Pour Report',
     `${currentPourReport.range} · Total: ${currentPourReport.totalQty.toFixed(1)} m³ · ${new Date().toLocaleDateString()}`,
-    ['Date', 'Type', 'Location', 'Grade', 'Qty (m³)'],
-    currentPourReport.rows.map(row=>[row.pour_date, row.pour_type, esc(row.location), esc(row.grade), Number(row.quantity).toFixed(1)])
+    ['Date', 'Type', 'Member', 'Location', 'Grade', 'Qty (m³)'],
+    currentPourReport.rows.map(row=>[row.pour_date, row.pour_type, esc(row.member||'–'), esc(row.location), esc(row.grade), Number(row.quantity).toFixed(1)])
   );
 };
 $('btn-whatsapp-pour-report').onclick = () => {
   if (!currentPourReport) return;
   let text = `*${activeConversation.name} — Concrete Pour Report*\n${currentPourReport.range}\n\nTotal: ${currentPourReport.totalQty.toFixed(1)} m³ (${currentPourReport.rows.length} pours)\n\n`;
   Object.entries(currentPourReport.byGrade).forEach(([g,q]) => { text += `${g}: ${q.toFixed(1)} m³\n`; });
+  text += '\nBy member:\n';
+  Object.entries(currentPourReport.byMember||{}).forEach(([g,q]) => { text += `${g}: ${q.toFixed(1)} m³\n`; });
   window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
 };
 $('btn-export-pour-csv').onclick = () => {
   if (!currentPourReport) return;
-  const headers = ['Date','Type','Location','Grade','Quantity (m³)','Logged by'];
-  const rows2 = currentPourReport.rows.map(r => [r.pour_date, r.pour_type, r.location, r.grade, r.quantity, r.ea_users?.name||''].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
+  const headers = ['Date','Type','Member','Location','Grade','Quantity (m³)','Logged by'];
+  const rows2 = currentPourReport.rows.map(r => [r.pour_date, r.pour_type, r.member||'', r.location, r.grade, r.quantity, r.ea_users?.name||''].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(','));
   const csv = [headers.join(','), ...rows2].join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
