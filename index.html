@@ -1989,10 +1989,25 @@ $('chat-photo-input').onchange = (e) => {
 $('btn-remove-photo').onclick = () => {
   pendingPhotoFile = null; $('chat-photo-input').value = ''; $('photo-preview-strip').style.display = 'none';
 };
+async function compressPhoto(file){
+  try {
+    if (!file.type || !file.type.startsWith('image/') || file.type === 'image/gif') return file;
+    const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    const max = 1280, k = Math.min(1, max / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.72));
+    if (blob && blob.size < file.size) return blob;
+  } catch (e) { /* fall back to the original */ }
+  return file;
+}
 async function uploadPhoto(file, scopeId){
-  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+  const body = await compressPhoto(file);
+  const isJpg = body !== file;
+  const ext = isJpg ? 'jpg' : ((file.name.split('.').pop() || 'jpg').toLowerCase());
   const path = `${scopeId}/${crypto.randomUUID()}.${ext}`;
-  const { error } = await sb.storage.from('eagles-photos').upload(path, file, { upsert: false });
+  const { error } = await sb.storage.from('eagles-photos').upload(path, body, { upsert: false, contentType: isJpg ? 'image/jpeg' : (file.type || undefined) });
   if (error) throw error;
   const { data } = sb.storage.from('eagles-photos').getPublicUrl(path);
   return data.publicUrl;
