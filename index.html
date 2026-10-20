@@ -909,6 +909,10 @@
         <div class="segmented"><div class="seg active" data-tasktype="individual">One person</div><div class="seg" data-tasktype="group">Whole group</div></div>
       </div>
       <div class="field" id="assignee-field"><label>Member</label><select id="task-assignee"></select></div>
+      <div class="field" id="req-field"><label>Task is complete when</label>
+        <div class="segmented" id="req-seg"><div class="seg" data-req="1">1 person</div><div class="seg active" data-req="2">2 people</div><div class="seg" data-req="all">Everyone</div></div>
+        <p style="font-size:11px;color:var(--text-muted);margin:6px 0 0;">Applies to whole-group tasks. Others who haven't finished are marked "covered" once it closes.</p>
+      </div>
       <div class="field"><label>Target quantity (optional)</label><input type="text" id="task-target" placeholder="e.g. 40 sqm"></div>
       <div class="field"><label>Due date</label><input type="date" id="task-due"></div>
       <button class="btn gold" id="btn-create-task">Create task</button>
@@ -1209,6 +1213,8 @@ let conversations = [];
 let activeConversation = null;
 let members = [];
 let taskSheetType = 'individual';
+let taskSheetReq = '2';
+function syncReqField(){ const whole = taskSheetType==='group' || !$('task-assignee').value; $('req-field').style.display = whole ? 'block' : 'none'; }
 let taskSheetPriority = 'medium';
 let activeSmartView = 'today';
 let activeProjectFilter = 'all';
@@ -1433,16 +1439,15 @@ async function checkMonthlyReminders(){
     try {
       const { data: existing } = await sb.from('ea_tasks').select('id, title').eq('conversation_id', conv.id).eq('due_date', todayStr);
       const existingTitles = new Set((existing||[]).map(t=>t.title));
-      const { data: allMembers } = await sb.from('ea_conversation_members').select('user_id').eq('conversation_id', conv.id);
-      const assigneeIds = (allMembers||[]).map(m=>m.user_id);
-      for (const r of reminders) {
+      const assigneeIds = (await getGroupMembers(conv.id)).map(m=>m.user_id);
+for (const r of reminders) {
         if (existingTitles.has(r.title)) continue;
         const { data: task, error } = await sb.from('ea_tasks').insert({
-          conversation_id: conv.id, title: r.title, task_type: 'group', priority: 'high',
+          conversation_id: conv.id, title: r.title, task_type: 'group', required_completions: 2, priority: 'high',
           due_date: todayStr, created_by: me.id
         }).select().single();
         if (error) { console.error('Could not create reminder task', error); continue; }
-        if (assigneeIds.length) await sb.from('ea_task_assignees').insert(assigneeIds.map(uid => ({ task_id: task.id, user_id: uid })));
+        if (assigneeIds.length) await sb.from('ea_task_assignees').upsert(assigneeIds.map(uid => ({ task_id: task.id, user_id: uid })), { onConflict:'task_id,user_id', ignoreDuplicates:true });
         await sb.from('ea_messages').insert({ conversation_id: conv.id, sender_id: me.id, msg_type:'system', content: `${r.emoji} Monthly reminder: ${r.title} is due today.` });
       }
     } catch (e) { console.error('Could not post monthly reminders for', conv.name, e); }
@@ -1493,7 +1498,7 @@ function classifyTasks(tasks){
   const buckets = { today:[], upcoming:[], overdue:[], all:tasks };
   tasks.forEach(t=>{
     if (!t.due_date) return;
-    const done = (t.ea_task_assignees||[]).every(a=>a.status==='completed');
+    const done = taskClosed(t);
     if (done) return;
     if (t.due_date < today) buckets.overdue.push(t);
     else if (t.due_date === today) buckets.today.push(t);
@@ -1531,7 +1536,7 @@ async function renderTasksHome(){
     allFiltered = allFiltered.filter(t => (t.title||'').toLowerCase().includes(qf) || (t.description||'').toLowerCase().includes(qf));
   }
   if (me.role === 'owner' || me.role === 'pm') {
-    const doneCount = allFiltered.filter(t => (t.ea_task_assignees||[]).length && (t.ea_task_assignees||[]).every(a=>a.status==='completed')).length;
+    const doneCount = allFiltered.filter(t => taskClosed(t)).length;
     const totalCount = allFiltered.length;
     const pct = totalCount ? Math.round((doneCount/totalCount)*100) : 0;
     $('owner-perf-summary').style.display = 'block';
@@ -1549,7 +1554,7 @@ async function renderTasksHome(){
 
   if (taskViewMode === 'list') {
     renderTaskListInto('task-list-view', list, true);
-    const completedList = allFiltered.filter(t => (t.ea_task_assignees||[]).length && (t.ea_task_assignees||[]).every(a=>a.status==='completed'));
+    const completedList = allFiltered.filter(t => taskClosed(t));
     const completedHtml = `
       <div id="completed-section-toggle" style="display:flex;align-items:center;gap:8px;padding:14px 4px 8px;cursor:pointer;">
         <i class="ti ti-chevron-right" id="completed-chevron" style="transition:transform 0.15s ease;"></i>
@@ -1580,18 +1585,28 @@ async function renderTasksHome(){
 
 function priorityRank(p){ return {urgent:0, high:1, medium:2, low:3}[p] ?? 2; }
 
+// ---- Completion rule: a task closes when `required_completions` assignees have finished it.
+// NULL = every assignee (older tasks). Never more than the number of assignees.
+function taskReq(t){ const n=(t.ea_task_assignees||[]).length; const r=t.required_completions; return (r==null) ? n : Math.min(r, n); }
+function taskDoneCount(t){ return (t.ea_task_assignees||[]).filter(a=>a.status==='completed').length; }
+function taskClosed(t){ const n=(t.ea_task_assignees||[]).length; return n>0 && taskDoneCount(t) >= taskReq(t); }
+// Someone who did not complete a task that others have closed is "covered by team": not scored against.
+function isCoveredFor(t, userId){ const a=(t.ea_task_assignees||[]).find(x=>x.user_id===userId); return !!a && a.status!=='completed' && taskClosed(t); }
+
 function taskRowHTML(t, showProject){
   const assignees = t.ea_task_assignees || [];
   const achieved = assignees.length ? Math.round(assignees.reduce((s,a)=>s+a.progress_pct,0)/assignees.length) : 0;
-  const done = assignees.length && assignees.every(a=>a.status==='completed');
+  const done = taskClosed(t);
   const mine = assignees.find(a=>a.user_id===me.id);
-  const isDoneForMe = mine ? mine.progress_pct >= 100 : done;
+  const isDoneForMe = mine ? (mine.progress_pct >= 100 || done) : done;
   const today = todayStr();
   let statusChip = '';
   if (done) statusChip = `<span class="status-chip done">Done</span>`;
   else if (t.due_date && t.due_date < today) statusChip = `<span class="status-chip overdue">Overdue</span>`;
   else if (achieved > 0) statusChip = `<span class="status-chip inprogress">In progress</span>`;
   else statusChip = `<span class="status-chip">Not started</span>`;
+  const needN = taskReq(t);
+  const needTag = (!done && assignees.length>1 && needN<assignees.length) ? `<span class="status-chip" title="Closes when ${needN} people finish">${taskDoneCount(t)} of ${needN} done</span>` : '';
 
   let dueLine = '';
   if (t.due_date) {
@@ -1600,19 +1615,20 @@ function taskRowHTML(t, showProject){
     else dueLine = `<span>Due ${t.due_date}</span>`;
   }
   const who = assignees.length === 1 ? (assignees[0].ea_users?.name||'') : (assignees.length>1 ? assignees.length+' people' : '');
+  const wholeTeam = t.task_type === 'group' && assignees.length > 1;
 
   return `<div class="task-row pri-${t.priority} ${done?'tr-done':''}" data-task-id="${t.id}">
     <div class="tr-check ${isDoneForMe?'checked':''}" data-quickcomplete="${t.id}">✓</div>
     <div class="tr-body">
       <div class="tr-top">
         <span class="tr-pri-label pri-${t.priority}">${t.priority==='urgent'?'P1 · CRITICAL':t.priority==='high'?'P2 · HIGH':t.priority==='low'?'P4 · LOW':'P3 · NORMAL'}</span>
-        ${statusChip}
+        ${statusChip}${needTag}
       </div>
       <div class="tr-title">${esc(t.title)}</div>
       <div class="tr-meta">
         ${showProject?`<span>${esc(t.ea_conversations?.name||'')}</span> · `:''}
         ${dueLine}
-        ${who?`<span class="tr-avatar">${who.slice(0,2).toUpperCase()}</span>`:''}
+        ${wholeTeam?`<span class="tr-avatar" style="width:auto;padding:0 9px;border-radius:12px;" title="Tagged to everyone in the group">Whole team · ${assignees.length}${needN<assignees.length?' (need '+needN+')':''}</span>`:(who?`<span class="tr-avatar">${who.slice(0,2).toUpperCase()}</span>`:'')}
       </div>
       ${achieved>0 && !done ? `<div class="tr-progress-wrap"><div class="gauge"><div class="gauge-fill" style="width:${achieved}%"></div></div><span class="tr-progress-pct">${achieved}%</span></div>` : ''}
     </div>
@@ -1648,7 +1664,7 @@ function renderTaskBoardInto(containerId, tasks){
   tasks.forEach(t=>{
     const assignees = t.ea_task_assignees || [];
     const achieved = assignees.length ? Math.round(assignees.reduce((s,a)=>s+a.progress_pct,0)/assignees.length) : 0;
-    const done = assignees.length && assignees.every(a=>a.status==='completed');
+    const done = taskClosed(t);
     if (done || achieved>=100) cols.done.push(t);
     else if (achieved>0) cols.inprogress.push(t);
     else cols.todo.push(t);
@@ -1857,7 +1873,7 @@ async function renderProjectTasks(){
     fetchCategoriesFor(activeConversation.id)
   ]);
   const allTasksRaw = tasks || [];
-  const isDone = (t) => (t.ea_task_assignees||[]).length && (t.ea_task_assignees||[]).every(a=>a.status==='completed');
+  const isDone = (t) => taskClosed(t);
   let allTasks = allTasksRaw.filter(t => !isDone(t));
   let completedTasks = allTasksRaw.filter(isDone);
   if (projTaskSearchQuery.trim()) {
@@ -2106,7 +2122,8 @@ function openTaskSheet(preselectConvId, preselectCategoryId){
   document.querySelectorAll('.pri-picker .pp').forEach(x=>x.classList.remove('active'));
   document.querySelector('.pri-picker .pp.medium').classList.add('active');
   $('assignee-field').style.display = 'block';
-  loadAssigneeOptionsFor($('task-project').value);
+  taskSheetReq = '2'; document.querySelectorAll('#req-seg .seg').forEach(x=>x.classList.toggle('active', x.getAttribute('data-req')==='2'));
+  loadAssigneeOptionsFor($('task-project').value).then(syncReqField);
   loadTaskSheetCategories($('task-project').value, preselectCategoryId);
   $('task-project').onchange = (e) => { loadAssigneeOptionsFor(e.target.value); loadTaskSheetCategories(e.target.value); };
   toggleSheet('task-sheet', true);
@@ -2115,9 +2132,26 @@ async function loadTaskSheetCategories(convId, preselectCategoryId){
   const cats = await fetchCategoriesFor(convId);
   renderCatPicker('task-cat-picker', cats, preselectCategoryId||null, (id)=>{ selectedTaskCategoryId = id; }, convId);
 }
+// Active members of a group. A task posted with nobody picked belongs to ALL of them.
+async function getGroupMembers(convId){
+  const { data } = await sb.from('ea_conversation_members').select('user_id, ea_users!user_id(name, active)').eq('conversation_id', convId);
+  return (data||[]).filter(m => m.ea_users && m.ea_users.active !== false).map(m => ({ user_id: m.user_id, name: m.ea_users.name || 'Member' }));
+}
+// Assign a task. No ids given = tag every active member of the group (counts in each person's performance).
+async function assignTaskTo(task, convId, ids){
+  let members = null, list = (ids||[]).filter(Boolean);
+  if (!list.length) { members = await getGroupMembers(convId); list = members.map(m=>m.user_id); }
+  if (list.length) {
+    const { error } = await sb.from('ea_task_assignees').upsert(list.map(uid => ({ task_id: task.id, user_id: uid })), { onConflict: 'task_id,user_id', ignoreDuplicates: true });
+    if (error) console.error('Could not assign task', error);
+  }
+  return { ids: list, whole: !(ids||[]).filter(Boolean).length, members };
+}
+function teamTagText(members){ return (members||[]).map(m => '@' + String(m.name).split(' ')[0]).join(' '); }
+
 async function loadAssigneeOptionsFor(convId){
   const { data } = await sb.from('ea_conversation_members').select('user_id, ea_users!user_id(name)').eq('conversation_id', convId);
-  $('task-assignee').innerHTML = (data||[]).map(m=>`<option value="${m.user_id}">${esc(m.ea_users?.name||'Member')}</option>`).join('');
+  $('task-assignee').innerHTML = '<option value="">Everyone in this group (whole team)</option>' + (data||[]).map(m=>`<option value="${m.user_id}">${esc(m.ea_users?.name||'Member')}</option>`).join('');
   return data || [];
 }
 $('btn-open-group-sheet').onclick = async () => {
@@ -2155,8 +2189,13 @@ document.querySelectorAll('[data-tasktype]').forEach(el=>{
     el.classList.add('active');
     taskSheetType = el.getAttribute('data-tasktype');
     $('assignee-field').style.display = taskSheetType==='group' ? 'none' : 'block';
+    syncReqField();
   };
 });
+document.querySelectorAll('#req-seg .seg').forEach(el=>{
+  el.onclick = () => { document.querySelectorAll('#req-seg .seg').forEach(x=>x.classList.remove('active')); el.classList.add('active'); taskSheetReq = el.getAttribute('data-req'); };
+});
+$('task-assignee').onchange = syncReqField;
 document.querySelectorAll('.pri-picker .pp').forEach(el=>{
   el.onclick = () => {
     document.querySelectorAll('.pri-picker .pp').forEach(x=>x.classList.remove('active'));
@@ -2168,16 +2207,16 @@ $('btn-create-task').onclick = async () => {
   const projectId = $('task-project').value;
   const title = $('task-title').value.trim();
   if (!title || !projectId) return;
+  const pickedId = taskSheetType === 'group' ? '' : $('task-assignee').value;
+  const effType = pickedId ? 'individual' : 'group';   // nobody picked = whole group
   const { data: task, error } = await sb.from('ea_tasks').insert({
     conversation_id: projectId, title, description: $('task-desc').value.trim() || null,
-    task_type: taskSheetType, priority: taskSheetPriority, category_id: selectedTaskCategoryId,
+    task_type: effType, required_completions: pickedId ? 1 : (taskSheetReq==='all' ? null : parseInt(taskSheetReq,10)), priority: taskSheetPriority, category_id: selectedTaskCategoryId,
     target_qty: $('task-target').value.trim() || null, due_date: $('task-due').value || null, created_by: me.id
   }).select().single();
   if (error) { alert('Could not create task: ' + error.message); return; }
-  const assignOpts = await loadAssigneeOptionsFor(projectId);
-  const assignees = taskSheetType === 'group' ? assignOpts.map(m=>m.user_id) : [$('task-assignee').value];
-  await sb.from('ea_task_assignees').insert(assignees.map(uid=>({ task_id: task.id, user_id: uid })));
-  await sb.from('ea_messages').insert({ conversation_id: projectId, sender_id: me.id, msg_type:'system', content: `${me.name} assigned a new task: "${title}"` });
+  const asg = await assignTaskTo(task, projectId, pickedId ? [pickedId] : []);
+  await sb.from('ea_messages').insert({ conversation_id: projectId, sender_id: me.id, msg_type:'system', content: asg.whole ? `${me.name} assigned a new task to the whole team: "${title}" ${teamTagText(asg.members)}` : `${me.name} assigned a new task: "${title}"` });
   $('task-title').value=''; $('task-desc').value=''; $('task-target').value=''; $('task-due').value='';
   toggleSheet('task-sheet', false);
   renderTasksHome();
@@ -2277,17 +2316,11 @@ $('qa-send').onclick = async () => {
     const taskType = qaAssigneeId ? 'individual' : 'group';
     const { data: task, error } = await sb.from('ea_tasks').insert({
       conversation_id: activeConversation.id, title, task_type: taskType,
-      priority: 'medium', due_date: qaDueDate, created_by: me.id
+      priority: 'medium', required_completions: qaAssigneeId ? 1 : 2, due_date: qaDueDate, created_by: me.id
     }).select().single();
     if (error) { alert('Could not create task: ' + error.message); return; }
-    if (qaAssigneeId) {
-      await sb.from('ea_task_assignees').insert({ task_id: task.id, user_id: qaAssigneeId });
-    } else {
-      const { data: allMembers } = await sb.from('ea_conversation_members').select('user_id').eq('conversation_id', activeConversation.id);
-      const assigneeIds = (allMembers||[]).map(m=>m.user_id);
-      if (assigneeIds.length) await sb.from('ea_task_assignees').insert(assigneeIds.map(uid => ({ task_id: task.id, user_id: uid })));
-    }
-    await sb.from('ea_messages').insert({ conversation_id: activeConversation.id, sender_id: me.id, msg_type:'system', content: `${me.name} added a task: "${title}"${!qaAssigneeId?' (whole team)':''}` });
+    const asg = await assignTaskTo(task, activeConversation.id, qaAssigneeId ? [qaAssigneeId] : []);
+    await sb.from('ea_messages').insert({ conversation_id: activeConversation.id, sender_id: me.id, msg_type:'system', content: `${me.name} added a task: "${title}"${asg.whole?' for the whole team '+teamTagText(asg.members):''}` });
     resetQuickAdd();
     renderProjectTasks();
     renderTasksHome();
@@ -2330,6 +2363,7 @@ async function renderTaskDetailBody(){
     <div class="td-section">
       <div class="info-card">
         <div class="info-card-row"><span class="k">Due</span><span class="v ${isOverdue?'overdue':''}">${t.due_date||'Not set'}</span></div>
+        ${assignees.length>1?`<div class="info-card-row"><span class="k">Closes when</span><span class="v">${taskReq(t)>=assignees.length?'Everyone has finished':taskReq(t)+' of '+assignees.length+' people finish'} · ${taskDoneCount(t)} done${taskClosed(t)?' · CLOSED':''}</span></div>`:''}
         <div class="info-card-row"><span class="k">Project</span><span class="v">${esc(t.ea_conversations?.name||'')}</span></div>
         ${t.target_qty?`<div class="info-card-row"><span class="k">Target</span><span class="v">${esc(t.target_qty)} ${esc(t.target_unit||'')}</span></div>`:''}
       </div>
@@ -2337,7 +2371,7 @@ async function renderTaskDetailBody(){
     <div class="td-section">
       <div class="td-label">Assignees (${assignees.length})</div>
       ${assignees.map(a=>`<div class="assignee-row">
-        <div class="ar-name">${esc(a.ea_users?.name||'')}</div>
+        <div class="ar-name">${esc(a.ea_users?.name||'')}${(a.status!=='completed' && taskClosed(t))?' <span style="font-size:10.5px;color:var(--text-muted);font-weight:500;">· covered by team</span>':''}</div>
         <div style="display:flex;align-items:center;gap:8px;">
           <div class="ar-pct" style="color:${a.status==='completed'?'var(--success)':'var(--text-primary)'};">${a.progress_pct}%</div>
           ${canManage ? (a.status==='completed'
@@ -3188,12 +3222,11 @@ async function renderPM(convId){
           const { data: task, error: taskErr } = await sb.from('ea_tasks').insert({
             conversation_id: convId, title: `Return equipment: ${item.name}`,
             description: 'On rental for more than 3 days - arrange return or confirm still needed.',
-            task_type: 'group', priority: 'medium', due_date: todayISO(), created_by: me.id
+            task_type: 'group', required_completions: 2, priority: 'medium', due_date: todayISO(), created_by: me.id
           }).select().single();
           if (!taskErr && task) {
-            const { data: allMembers } = await sb.from('ea_conversation_members').select('user_id').eq('conversation_id', convId);
-            const assigneeIds = (allMembers||[]).map(m=>m.user_id);
-            if (assigneeIds.length) await sb.from('ea_task_assignees').insert(assigneeIds.map(uid => ({ task_id: task.id, user_id: uid })));
+            const assigneeIds = (await getGroupMembers(convId)).map(m=>m.user_id);
+if (assigneeIds.length) await sb.from('ea_task_assignees').upsert(assigneeIds.map(uid => ({ task_id: task.id, user_id: uid })), { onConflict:'task_id,user_id', ignoreDuplicates:true });
             await sb.from('ea_pm_items').update({ return_task_id: task.id }).eq('id', item.id);
             item.return_task_id = task.id;
             await sb.from('ea_messages').insert({ conversation_id: convId, sender_id: me.id, msg_type:'system', content: `Reminder task raised: return "${item.name}" (on rental ${Math.floor(daysOn)} days)` });
@@ -3360,12 +3393,11 @@ $('btn-confirm-repair').onclick = async () => {
     const due = new Date(); due.setDate(due.getDate()+2);
     const { data: task, error: taskErr } = await sb.from('ea_tasks').insert({
       conversation_id: activeConversation.id, title: `Repair ${item.name}`, description: note||null,
-      task_type: 'group', priority: 'high', due_date: due.toISOString().slice(0,10), created_by: me.id
+      task_type: 'group', required_completions: 2, priority: 'high', due_date: due.toISOString().slice(0,10), created_by: me.id
     }).select().single();
     if (taskErr) throw taskErr;
-    const { data: allMembers } = await sb.from('ea_conversation_members').select('user_id').eq('conversation_id', activeConversation.id);
-    const assigneeIds = (allMembers||[]).map(m=>m.user_id);
-    if (assigneeIds.length) await sb.from('ea_task_assignees').insert(assigneeIds.map(uid => ({ task_id: task.id, user_id: uid })));
+    const assigneeIds = (await getGroupMembers(activeConversation.id)).map(m=>m.user_id);
+if (assigneeIds.length) await sb.from('ea_task_assignees').upsert(assigneeIds.map(uid => ({ task_id: task.id, user_id: uid })), { onConflict:'task_id,user_id', ignoreDuplicates:true });
     const { error } = await sb.from('ea_pm_items').update({ status:'repair', repair_note: note||null, repair_task_id: task.id, updated_at: new Date().toISOString() }).eq('id', pmRepairItemId);
     if (error) throw error;
     await sb.from('ea_messages').insert({ conversation_id: activeConversation.id, sender_id: me.id, msg_type:'system', content: `${me.name} marked "${item.name}" for repair — task created (High priority, due in 2 days)` });
@@ -4223,12 +4255,14 @@ async function renderStaffPerformance(){
   const pane = $('cpane-staffperf');
   pane.innerHTML = `<div class="cs-heading">Loading…</div>`;
   try {
-    const [{data:users, error:usersErr}, {data:rows, error:rowsErr}] = await Promise.all([
-      withTimeout(sb.from('ea_users').select('id, name, role').eq('active', true).order('name'), 15000, 'Load staff'),
-      withTimeout(sb.from('ea_task_assignees').select('user_id, progress_pct, status, ea_tasks!inner(due_date, status)').eq('ea_tasks.status', 'active'), 15000, 'Load tasks'),
+    const [{data:users, error:usersErr}, {data:tasksRaw, error:rowsErr}, {data:mems}] = await Promise.all([
+      withTimeout(sb.from('ea_users').select('id, name, role').eq('active', true).eq('exclude_from_performance', false).order('name'), 15000, 'Load staff'),
+      withTimeout(sb.from('ea_tasks').select('id, conversation_id, due_date, status, created_at, required_completions, ea_task_assignees(user_id, status)').eq('status', 'active'), 15000, 'Load tasks'),
+      withTimeout(sb.from('ea_conversation_members').select('conversation_id, user_id, created_at'), 15000, 'Load members'),
     ]);
     if (usersErr) throw usersErr;
     if (rowsErr) throw rowsErr;
+    const joinedAt = new Map((mems||[]).map(m => [m.conversation_id+'|'+m.user_id, m.created_at]));
 
     let rangeStart = null, rangeEnd = null;
     if (staffPerfPeriod === 'week') [rangeStart, rangeEnd] = getWeekRange();
@@ -4236,19 +4270,25 @@ async function renderStaffPerformance(){
     const todayStr = new Date().toISOString().slice(0,10);
 
     const byUser = {};
-    (users||[]).forEach(u => { byUser[u.id] = { user: u, assigned: 0, completed: 0, overdue: 0 }; });
-    (rows||[]).forEach(r => {
-      const bucket = byUser[r.user_id];
-      if (!bucket) return;
-      const due = r.ea_tasks?.due_date;
+    (users||[]).forEach(u => { byUser[u.id] = { user: u, assigned: 0, completed: 0, overdue: 0, covered: 0 }; });
+    (tasksRaw||[]).forEach(t => {
+      const due = t.due_date;
       if (rangeStart) {
         if (!due) return;
         const d = new Date(due);
         if (d < rangeStart || d > rangeEnd) return;
       }
-      bucket.assigned++;
-      if (r.status === 'completed') bucket.completed++;
-      else if (due && due < todayStr) bucket.overdue++;
+      const closed = taskClosed(t);
+      (t.ea_task_assignees||[]).forEach(a => {
+        const bucket = byUser[a.user_id];
+        if (!bucket) return;
+        // only tasks created after the person joined the project count toward them
+        const j = joinedAt.get(t.conversation_id+'|'+a.user_id);
+        if (j && t.created_at && new Date(t.created_at) < new Date(j)) return;
+        if (a.status === 'completed') { bucket.assigned++; bucket.completed++; }
+        else if (closed) { bucket.covered++; }          // covered by team: not scored against
+        else { bucket.assigned++; if (due && due < todayStr) bucket.overdue++; }
+      });
     });
 
     const list = Object.values(byUser).map(x => ({
@@ -4262,14 +4302,14 @@ async function renderStaffPerformance(){
           <div class="seg ${staffPerfPeriod==='month'?'active':''}" data-staffperf-period="month">This month</div>
           <div class="seg ${staffPerfPeriod==='all'?'active':''}" data-staffperf-period="all">All time</div>
         </div>
-        <p style="font-size:11px;color:var(--text-muted);margin:0 0 14px;">Completion % = tasks finished ÷ tasks assigned in this period, including your share of any whole-group tasks. Sorted by whoever needs attention first.</p>
+        <p style="font-size:11px;color:var(--text-muted);margin:0 0 14px;">Completion % = tasks finished ÷ tasks assigned in this period. Whole-group tasks count for everyone, but once enough people have finished one, the rest are shown as \"covered by team\" and are not marked down. Only tasks created after you joined the project count. Sorted by whoever needs attention first.</p>
         ${list.map(x => `
           <div class="cs-card">
             <div class="cs-row">
               <div><strong>${esc(x.user.name)}</strong><div style="font-size:11px;color:var(--text-muted);text-transform:capitalize;">${x.user.role}</div></div>
               <div style="text-align:right;">
                 <div style="font-family:var(--font-display);font-size:24px;font-weight:700;color:${x.pct===null?'var(--text-muted)':x.pct>=75?'var(--success)':x.pct>=40?'var(--warning)':'var(--danger)'};">${x.pct===null?'—':x.pct+'%'}</div>
-                <div style="font-size:10.5px;color:var(--text-muted);">${x.completed}/${x.assigned} done${x.overdue?` · <span style="color:var(--danger);font-weight:600;">${x.overdue} overdue</span>`:''}</div>
+                <div style="font-size:10.5px;color:var(--text-muted);">${x.completed}/${x.assigned} done${x.covered?` · ${x.covered} covered by team`:''}${x.overdue?` · <span style="color:var(--danger);font-weight:600;">${x.overdue} overdue</span>`:''}</div>
               </div>
             </div>
             ${x.assigned ? `<div class="gauge"><div class="gauge-fill ${x.pct>=100?'done':''}" style="width:${x.pct}%"></div></div>` : `<p style="font-size:11.5px;color:var(--text-muted);margin:6px 0 0;">No tasks assigned in this period.</p>`}
@@ -4463,13 +4503,24 @@ function progressWheelSVG(pct, size, strokeWidth, color){
 }
 async function renderMyProgress(){
   if (!me) return;
-  const { data: rows } = await sb.from('ea_task_assignees').select('*, ea_tasks(due_date, status)').eq('user_id', me.id);
-  const all = (rows||[]).filter(r => r.ea_tasks && r.ea_tasks.status === 'active');
+  const [{ data: tasksRaw }, { data: myMems }] = await Promise.all([
+    sb.from('ea_tasks').select('id, conversation_id, due_date, status, created_at, required_completions, ea_task_assignees(user_id, status)').eq('status','active'),
+    sb.from('ea_conversation_members').select('conversation_id, created_at').eq('user_id', me.id),
+  ]);
+  const joined = new Map((myMems||[]).map(m => [m.conversation_id, m.created_at]));
   const [start, end] = currentProgressPeriod === 'week' ? getWeekRange() : getMonthRange();
-  const inPeriod = all.filter(r => r.ea_tasks.due_date && new Date(r.ea_tasks.due_date) >= start && new Date(r.ea_tasks.due_date) <= end);
+  const today = new Date();
+  // my tasks due in the period, created after I joined; tasks the team closed without me are "covered" and left out
+  const inPeriod = (tasksRaw||[]).filter(t => {
+    const mineRow = (t.ea_task_assignees||[]).find(a=>a.user_id===me.id);
+    if (!mineRow || !t.due_date) return false;
+    const d = new Date(t.due_date); if (d < start || d > end) return false;
+    const j = joined.get(t.conversation_id); if (j && new Date(t.created_at) < new Date(j)) return false;
+    if (mineRow.status !== 'completed' && taskClosed(t)) return false;
+    return true;
+  }).map(t => ({ status: (t.ea_task_assignees.find(a=>a.user_id===me.id)||{}).status, ea_tasks: t }));
   const periodTotal = inPeriod.length;
   const periodDone = inPeriod.filter(r=>r.status==='completed').length;
-  const today = new Date();
   const periodOverdue = inPeriod.filter(r=> r.status!=='completed' && new Date(r.ea_tasks.due_date) < today).length;
   const periodPct = periodTotal ? Math.round((periodDone/periodTotal)*100) : 0;
   const color = periodPct >= 75 ? 'var(--success)' : (periodPct >= 40 ? 'var(--warning)' : 'var(--danger)');
