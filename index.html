@@ -523,7 +523,8 @@
     </div>
     <div class="subhead-row">
       <span class="subhead-label">Sorted by priority</span>
-      <div class="view-toggle">
+      <div id="btn-export-tasks" style="display:none;margin-left:auto;margin-right:10px;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--accent-dark);cursor:pointer;padding:5px 9px;border:1px solid var(--accent-dark);border-radius:8px;"><i class="ti ti-file-type-pdf"></i> Export PDF</div>
+      <div class="view-toggle" id="task-view-toggle">
         <div class="vt active" data-taskview="list"><i class="ti ti-list"></i></div>
         <div class="vt" data-taskview="board"><i class="ti ti-layout-kanban"></i></div>
       </div>
@@ -1010,6 +1011,32 @@
     <div class="sheet-handle"></div>
     <div class="sheet-title"><span>Progress report</span><span class="sheet-close" data-close="wbs-report-sheet">✕</span></div>
     <div class="sheet-body" id="wbs-report-body"></div>
+  </div>
+
+  <!-- SHEET: export task list as PDF -->
+  <div class="sheet-backdrop" id="task-export-sheet-backdrop"></div>
+  <div class="sheet" id="task-export-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title"><span>Export task list (PDF)</span><span class="sheet-close" data-close="task-export-sheet">✕</span></div>
+    <div class="sheet-body">
+      <div class="field"><label>Project</label><select id="tx-project"></select></div>
+      <div class="field"><label>Tasks to include</label>
+        <div class="chip-row" id="tx-scope">
+          <div class="chip selected" data-scope="open">Open</div>
+          <div class="chip" data-scope="overdue">Overdue</div>
+          <div class="chip" data-scope="completed">Completed</div>
+          <div class="chip" data-scope="all">All</div>
+        </div>
+      </div>
+      <button class="btn gold" id="btn-tx-generate"><i class="ti ti-file-type-pdf"></i> Create PDF</button>
+      <div id="tx-result" style="display:none;margin-top:14px;">
+        <p id="tx-result-msg" style="font-size:12.5px;color:var(--text-secondary);margin-bottom:10px;"></p>
+        <div style="display:flex;gap:8px;">
+          <button class="btn secondary" id="btn-tx-share" style="margin-top:0;flex:1;"><i class="ti ti-brand-whatsapp"></i> Share / WhatsApp</button>
+          <button class="btn secondary" id="btn-tx-download" style="margin-top:0;flex:1;"><i class="ti ti-download"></i> Download</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- SHEET: target completion date -->
@@ -1511,6 +1538,7 @@ async function renderTasksHome(){
   const dateEl = $('greeting-date');
   const now = new Date();
   dateEl.textContent = now.toLocaleDateString('en-US', { weekday:'long', day:'numeric', month:'long' });
+  $('btn-export-tasks').style.display = (me.role === 'owner') ? 'flex' : 'none';
 
   const allTasks = await fetchAllMyTasks();
   const buckets = classifyTasks(allTasks);
@@ -1582,6 +1610,201 @@ async function renderTasksHome(){
     renderTaskBoardInto('task-board-view', list, true);
   }
 }
+
+/* ================= EXPORT TASK LIST AS PDF (owner) ================= */
+let txScope = 'open', txFile = null;
+$('btn-export-tasks').onclick = () => {
+  const sel = $('tx-project');
+  sel.innerHTML = `<option value="all">All projects</option>` + conversations.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
+  sel.value = (activeProjectFilter && activeProjectFilter !== 'all' && conversations.some(c=>c.id===activeProjectFilter)) ? activeProjectFilter : 'all';
+  $('tx-result').style.display = 'none'; txFile = null;
+  toggleSheet('task-export-sheet', true);
+};
+$('tx-scope').querySelectorAll('[data-scope]').forEach(ch => {
+  ch.onclick = () => {
+    txScope = ch.getAttribute('data-scope');
+    $('tx-scope').querySelectorAll('[data-scope]').forEach(x => x.classList.toggle('selected', x === ch));
+    $('tx-result').style.display = 'none';
+  };
+});
+$('tx-project').onchange = () => { $('tx-result').style.display = 'none'; };
+
+function taskPdfStatus(t, today){
+  const a = t.ea_task_assignees || [];
+  const closed = taskClosed(t);
+  const pct = a.length ? Math.round(a.reduce((s,x)=>s+x.progress_pct,0)/a.length) : 0;
+  const need = taskReq(t);
+  const extra = (!closed && a.length>1 && need<a.length) ? ` (${taskDoneCount(t)} of ${need} done)` : '';
+  if (closed) return { text:'Done', color:'#2D6B45' };
+  if (t.due_date && t.due_date < today) {
+    const d = Math.max(1, Math.round((new Date(today)-new Date(t.due_date))/86400000));
+    return { text:`Overdue ${d}d` + (pct?` · ${pct}%`:'') + extra, color:'#A8443A' };
+  }
+  if (pct > 0) return { text:`In progress ${pct}%` + extra, color:'#8A6A1F' };
+  return { text:'Not started' + extra, color:'#6B7280' };
+}
+
+async function buildTaskListPdf(projectId, scope){
+  const today = todayStr();
+  let tasks = await fetchAllMyTasks();
+  if (projectId !== 'all') tasks = tasks.filter(t => t.conversation_id === projectId);
+  const total = tasks.length;
+  const nClosed = tasks.filter(taskClosed).length;
+  const nOverdue = tasks.filter(t => !taskClosed(t) && t.due_date && t.due_date < today).length;
+  const nOpen = total - nClosed;
+  if (scope === 'open') tasks = tasks.filter(t => !taskClosed(t));
+  else if (scope === 'overdue') tasks = tasks.filter(t => !taskClosed(t) && t.due_date && t.due_date < today);
+  else if (scope === 'completed') tasks = tasks.filter(taskClosed);
+  if (!tasks.length) return null;
+
+  const byProj = new Map();
+  tasks.forEach(t => { const k = t.ea_conversations?.name || 'Project'; if (!byProj.has(k)) byProj.set(k, []); byProj.get(k).push(t); });
+  const projNames = [...byProj.keys()].sort((a,b)=>a.localeCompare(b));
+  projNames.forEach(k => byProj.get(k).sort((a,b)=> priorityRank(a.priority)-priorityRank(b.priority) || String(a.due_date||'9999').localeCompare(String(b.due_date||'9999'))));
+
+  // ---- draw pages on canvas (A4 @150dpi) so every script (Hindi/Bengali/Tamil) prints correctly ----
+  const W=1240, H=1754, M=70, CW=W-2*M, FONT='"Helvetica Neue",Arial,"Noto Sans","Noto Sans Devanagari","Noto Sans Bengali","Noto Sans Tamil",sans-serif';
+  const NAVY='#16243A', GOLD='#D9AB52', INK='#1F2937', GREY='#6B7280', LINE='#E5E7EB', SOFT='#F5F3EC';
+  const pages = []; let cv, cx, y;
+  const newPage = () => { cv = document.createElement('canvas'); cv.width=W; cv.height=H; cx = cv.getContext('2d'); cx.fillStyle='#fff'; cx.fillRect(0,0,W,H); cx.textBaseline='alphabetic'; pages.push(cv); y = M; };
+  const font = (px, bold) => { cx.font = `${bold?'700 ':''}${px}px ${FONT}`; };
+  const wrap = (text, w, px, bold) => {
+    font(px, bold); const out=[]; let line='';
+    for (const word of String(text||'').replace(/\s+/g,' ').trim().split(' ')) {
+      let wd = word;
+      while (cx.measureText(wd).width > w && wd.length > 1) { let c=wd.length-1; while (c>1 && cx.measureText(wd.slice(0,c)).width > w) c--; if (line){out.push(line);line='';} out.push(wd.slice(0,c)); wd=wd.slice(c); }
+      const test = line ? line+' '+wd : wd;
+      if (cx.measureText(test).width <= w) line = test; else { if (line) out.push(line); line = wd; }
+    }
+    if (line) out.push(line); return out.length ? out : [''];
+  };
+  const txt = (s,x,yy,px,color,bold,align,w) => { font(px,bold); cx.fillStyle=color; let xx=x; if (align==='r') xx = x + w - cx.measureText(s).width; cx.fillText(s,xx,yy); };
+
+  const cols = [ ['#',50], ['Task',440], ['Assigned to',200], ['Due',130], ['Priority',110], ['Status',170] ];
+  const colX = []; { let x=M; cols.forEach(c=>{ colX.push(x); x+=c[1]; }); }
+  const drawHeader = () => {
+    cx.fillStyle=NAVY; cx.fillRect(M,y,CW,40);
+    cols.forEach((c,i)=> txt(c[0], colX[i]+10, y+27, 19, '#fff', true));
+    y += 40;
+  };
+  const projBar = (name, n, cont) => {
+    if (y + 40 + 40 + 90 > H - 90) newPage();
+    cx.fillStyle=GOLD; cx.fillRect(M,y,6,38);
+    txt(name.toUpperCase() + (cont?'  (continued)':''), M+18, y+27, 22, NAVY, true);
+    txt(`${n} task${n>1?'s':''}`, M, y+27, 19, GREY, false, 'r', CW);
+    y += 50;
+  };
+
+  newPage();
+  // title band
+  cx.fillStyle=NAVY; cx.fillRect(M,y,CW,170); cx.fillStyle=GOLD; cx.fillRect(M,y+167,CW,5);
+  txt('CAMEO CONSTRUCTIONS & INFRASTRUCTURE', M+28, y+44, 20, GOLD, true);
+  txt('EAGLES Task List', M+28, y+98, 46, '#fff', true);
+  const projLabel = projectId==='all' ? 'All projects' : (conversations.find(c=>c.id===projectId)?.name || '');
+  const scopeLabel = {open:'Open tasks', overdue:'Overdue tasks', completed:'Completed tasks', all:'All tasks'}[scope];
+  txt(`${projLabel}  |  ${scopeLabel}  |  ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}`, M+28, y+140, 22, '#CBD5E1');
+  y += 200;
+  // summary tiles
+  const tiles = [['Total', total, INK], ['Open', nOpen, '#8A6A1F'], ['Overdue', nOverdue, '#A8443A'], ['Completed', nClosed, '#2D6B45']];
+  const tw = (CW - 3*16)/4;
+  tiles.forEach((t,i)=>{ const x = M + i*(tw+16); cx.fillStyle=SOFT; cx.fillRect(x,y,tw,92); txt(String(t[1]), x+20, y+56, 40, t[2], true); txt(t[0].toUpperCase(), x+20, y+80, 16, GREY, true); });
+  y += 92 + 14;
+  const pctDone = total ? Math.round(nClosed/total*100) : 0;
+  txt(`${pctDone}% complete (${nClosed} of ${total} tasks)`, M, y+20, 20, GREY);
+  y += 50;
+
+  for (const name of projNames) {
+    const list = byProj.get(name);
+    projBar(name, list.length, false);
+    drawHeader();
+    list.forEach((t, idx) => {
+      const a = t.ea_task_assignees || [];
+      const whole = t.task_type === 'group' && a.length > 1;
+      const who = whole ? `Whole team (${a.length})` : (a.length ? a.map(x=>x.ea_users?.name||'').filter(Boolean).join(', ') : '—');
+      const st = taskPdfStatus(t, today);
+      const lines = {
+        task: wrap(t.title, cols[1][1]-20, 20, true),
+        who: wrap(who, cols[2][1]-20, 19, false),
+        st: wrap(st.text, cols[5][1]-20, 18, true),
+      };
+      const rowH = Math.max(lines.task.length*27, lines.who.length*25, lines.st.length*24) + 22;
+      if (y + rowH > H - 90) { newPage(); projBar(name, list.length, true); drawHeader(); }
+      if (idx % 2) { cx.fillStyle='#FAFAF7'; cx.fillRect(M,y,CW,rowH); }
+      const base = y + 30;
+      txt(String(idx+1), colX[0]+10, base, 19, GREY);
+      lines.task.forEach((l,i)=> txt(l, colX[1]+10, base+i*27, 20, INK, true));
+      lines.who.forEach((l,i)=> txt(l, colX[2]+10, base+i*25, 19, INK));
+      const due = t.due_date ? new Date(t.due_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : '—';
+      txt(due, colX[3]+10, base, 19, (st.text.startsWith('Overdue') ? '#A8443A' : INK));
+      const pr = {urgent:['P1 Critical','#A8443A'], high:['P2 High','#C2701F'], medium:['P3 Normal',GREY], low:['P4 Low',GREY]}[t.priority] || ['P3 Normal',GREY];
+      txt(pr[0], colX[4]+10, base, 18, pr[1], true);
+      lines.st.forEach((l,i)=> txt(l, colX[5]+10, base+i*24, 18, st.color, true));
+      cx.fillStyle=LINE; cx.fillRect(M, y+rowH-1, CW, 1);
+      y += rowH;
+    });
+    y += 30;
+  }
+  // footers
+  pages.forEach((pc,i)=>{ const c2 = pc.getContext('2d'); c2.fillStyle=LINE; c2.fillRect(M,H-70,CW,1); c2.font=`17px ${FONT}`; c2.fillStyle=GREY;
+    c2.fillText(`EAGLES Task List - ${projLabel} - ${scopeLabel}`, M, H-40);
+    const t = `Page ${i+1} of ${pages.length}`; c2.fillText(t, W-M-c2.measureText(t).width, H-40); });
+
+  // ---- minimal PDF writer (one JPEG per A4 page) ----
+  const enc = new TextEncoder(); const chunks = []; const offs = []; let pos = 0;
+  const put = (d) => { const b = typeof d === 'string' ? enc.encode(d) : d; chunks.push(b); pos += b.length; };
+  const n = pages.length;
+  put('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n');
+  const obj = (id, body) => { offs[id] = pos; put(`${id} 0 obj\n`); if (typeof body === 'string') put(body); else body(); put('\nendobj\n'); };
+  obj(1, '<< /Type /Catalog /Pages 2 0 R >>');
+  obj(2, `<< /Type /Pages /Count ${n} /Kids [${pages.map((_,i)=>`${3+3*i} 0 R`).join(' ')}] >>`);
+  for (let i=0;i<n;i++){
+    const b64 = pages[i].toDataURL('image/jpeg', 0.88).split(',')[1];
+    const bin = atob(b64); const bytes = new Uint8Array(bin.length); for (let k=0;k<bin.length;k++) bytes[k]=bin.charCodeAt(k);
+    const content = 'q 595.28 0 0 841.89 0 0 cm /Im0 Do Q';
+    obj(3+3*i, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595.28 841.89] /Contents ${4+3*i} 0 R /Resources << /XObject << /Im0 ${5+3*i} 0 R >> >> >>`);
+    obj(4+3*i, `<< /Length ${content.length} >>\nstream\n${content}\nendstream`);
+    obj(5+3*i, () => { put(`<< /Type /XObject /Subtype /Image /Width ${W} /Height ${H} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${bytes.length} >>\nstream\n`); put(bytes); put('\nendstream'); });
+  }
+  const xref = pos; const total2 = 3+3*n;
+  put(`xref\n0 ${total2}\n0000000000 65535 f \n`);
+  for (let id=1; id<total2; id++) put(String(offs[id]).padStart(10,'0') + ' 00000 n \n');
+  put(`trailer\n<< /Size ${total2} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`);
+  const blob = new Blob(chunks, { type:'application/pdf' });
+  const slug = (x) => String(x).replace(/[^A-Za-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+  const filename = `${slug(projLabel)}_${slug(scopeLabel)}_${todayStr()}_EAGLES.pdf`;
+  return { blob, filename, count: tasks.length, pages: n };
+}
+
+$('btn-tx-generate').onclick = async () => {
+  const btn = $('btn-tx-generate'); const old = btn.innerHTML;
+  btn.disabled = true; btn.innerHTML = 'Creating…';
+  try {
+    const r = await buildTaskListPdf($('tx-project').value, txScope);
+    if (!r) { txFile = null; $('tx-result').style.display='block'; $('tx-result-msg').textContent = 'No tasks match this selection.'; $('btn-tx-share').style.display='none'; $('btn-tx-download').style.display='none'; }
+    else {
+      txFile = r;
+      $('tx-result').style.display='block';
+      $('btn-tx-share').style.display=''; $('btn-tx-download').style.display='';
+      $('tx-result-msg').textContent = `Ready: ${r.count} task${r.count>1?'s':''}, ${r.pages} page${r.pages>1?'s':''} (${Math.round(r.blob.size/1024)} KB).`;
+    }
+  } catch (e) { alert('Could not create PDF: ' + (e.message||e)); }
+  btn.disabled = false; btn.innerHTML = old;
+};
+function txDownload(){
+  if (!txFile) return;
+  const url = URL.createObjectURL(txFile.blob); const a = document.createElement('a');
+  a.href = url; a.download = txFile.filename; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 60000);
+}
+$('btn-tx-download').onclick = txDownload;
+$('btn-tx-share').onclick = async () => {
+  if (!txFile) return;
+  const file = new File([txFile.blob], txFile.filename, { type:'application/pdf' });
+  try {
+    if (navigator.canShare && navigator.canShare({ files:[file] })) await navigator.share({ files:[file], title: txFile.filename });
+    else { txDownload(); alert('Sharing files is not supported on this device. The PDF was downloaded - attach it in WhatsApp from your downloads.'); }
+  } catch (e) { if (e && e.name !== 'AbortError') txDownload(); }
+};
 
 function priorityRank(p){ return {urgent:0, high:1, medium:2, low:3}[p] ?? 2; }
 
