@@ -705,7 +705,10 @@
             <label>Trade / role</label>
             <div id="dlr-trade-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;"></div>
           </div>
-          <div><label>Subcontractor (optional)</label><input type="text" id="dlr-sub-input" placeholder="e.g. Sri Ganesh Labour Co."></div>
+          <div><label>Subcontractor (optional)</label>
+            <select id="dlr-sub-select"><option value="">— None —</option></select>
+            <input type="text" id="dlr-sub-input" placeholder="Type subcontractor name" style="display:none;margin-top:6px;">
+            <div id="dlr-sub-hint" style="font-size:11px;color:var(--text-muted);margin-top:4px;"></div></div>
           <div><label>Headcount</label><input type="number" id="dlr-count-input" min="0" placeholder="0"></div>
           <button class="btn full" id="btn-add-dlr-entry" style="margin-top:2px;">Add trade</button>
         </div>
@@ -3392,7 +3395,7 @@ $('btn-save-weather').onclick = async () => {
 $('btn-show-add-trade').onclick = () => {
   const willShow = $('dlr-add-form').style.display === 'none';
   $('dlr-add-form').style.display = willShow ? 'grid' : 'none';
-  if (willShow) renderDlrTradeGrid();
+  if (willShow) { renderDlrTradeGrid(); loadDlrSubs(); }
 };
 
 $('btn-copy-yesterday-dlr').onclick = async () => {
@@ -3401,7 +3404,7 @@ $('btn-copy-yesterday-dlr').onclick = async () => {
     const yesterday = new Date(dlrCurrentDate); yesterday.setDate(yesterday.getDate()-1);
     const yesterdayStr = dlrDateStr(yesterday);
 
-    const { data: yEntries, error: fetchErr } = await sb.from('ea_dlr_entries').select('trade, subcontractor, headcount').eq('conversation_id', activeConversation.id).eq('entry_date', yesterdayStr);
+    const { data: yEntries, error: fetchErr } = await sb.from('ea_dlr_entries').select('trade, subcontractor, subcontractor_code, headcount').eq('conversation_id', activeConversation.id).eq('entry_date', yesterdayStr);
     if (fetchErr) throw fetchErr;
     if (!yEntries || !yEntries.length) { alert("No DLR entries found for yesterday to copy."); return; }
 
@@ -3411,7 +3414,7 @@ $('btn-copy-yesterday-dlr').onclick = async () => {
     }
 
     const { error: insertErr } = await sb.from('ea_dlr_entries').insert(
-      yEntries.map(e => ({ conversation_id: activeConversation.id, entry_date: todayForView, trade: e.trade, subcontractor: e.subcontractor, headcount: e.headcount, created_by: me.id }))
+      yEntries.map(e => ({ conversation_id: activeConversation.id, entry_date: todayForView, trade: e.trade, subcontractor: e.subcontractor, subcontractor_code: e.subcontractor_code, headcount: e.headcount, created_by: me.id }))
     );
     if (insertErr) throw insertErr;
     await renderDLR(activeConversation.id);
@@ -3500,6 +3503,27 @@ async function renderDLR(convId){
   `).join('') : `<p style="font-size:12px;color:var(--text-muted);">No history yet.</p>`;
 }
 
+/* Starred subcontractors from CAMELS (synced automatically into ea_subcontractors) */
+let dlrSubs = [];
+async function loadDlrSubs(){
+  try{
+    const { data, error } = await sb.from('ea_subcontractors').select('id, acct_code, name, phone').eq('is_active', true).order('name');
+    if (!error) dlrSubs = data || [];
+  }catch(e){ console.error('Subcontractor list failed', e); }
+  renderDlrSubSelect();
+}
+function renderDlrSubSelect(){
+  const sel = $('dlr-sub-select'); if (!sel) return;
+  sel.innerHTML = '<option value="">— None —</option>' + dlrSubs.map(s=>`<option value="${esc(s.acct_code)}">${esc(s.name)} · ${esc(s.acct_code)}</option>`).join('') + '<option value="__other">Other (type name)…</option>';
+  $('dlr-sub-input').style.display = 'none'; $('dlr-sub-input').value = '';
+  $('dlr-sub-hint').textContent = dlrSubs.length ? '' : 'No starred subcontractors yet. Star them in CAMELS, or choose “Other” to type a name.';
+}
+$('dlr-sub-select').onchange = () => {
+  const other = $('dlr-sub-select').value === '__other';
+  $('dlr-sub-input').style.display = other ? 'block' : 'none';
+  if (other) $('dlr-sub-input').focus();
+};
+
 const DLR_TRADES = ['Foreman','Masons','Helpers','Carpenters','Carp Helpers','Steel fitters','St helpers','Electrician','Operators','Others'];
 let dlrSelectedTrade = null;
 function renderDlrTradeGrid(){
@@ -3515,13 +3539,15 @@ function renderDlrTradeGrid(){
 }
 
 $('btn-add-dlr-entry').onclick = async () => {
-  const sub = $('dlr-sub-input').value.trim();
+  const selv = $('dlr-sub-select').value; let sub = '', subCode = null;
+  if (selv === '__other') sub = $('dlr-sub-input').value.trim();
+  else if (selv) { const s0 = dlrSubs.find(x => x.acct_code === selv); sub = s0 ? s0.name : ''; subCode = s0 ? s0.acct_code : null; }
   const count = parseInt($('dlr-count-input').value, 10) || 0;
   const dateStr = dlrDateStr(dlrCurrentDate);
   if (!dlrSelectedTrade) { alert('Pick a trade'); return; }
-  const { error } = await sb.from('ea_dlr_entries').insert({ conversation_id: activeConversation.id, entry_date: dateStr, trade: dlrSelectedTrade, subcontractor: sub||null, headcount: count, created_by: me.id });
+  const { error } = await sb.from('ea_dlr_entries').insert({ conversation_id: activeConversation.id, entry_date: dateStr, trade: dlrSelectedTrade, subcontractor: sub||null, subcontractor_code: subCode, headcount: count, created_by: me.id });
   if (error) { alert('Could not add entry: ' + error.message); return; }
-  $('dlr-sub-input').value=''; $('dlr-count-input').value='';
+  renderDlrSubSelect(); $('dlr-count-input').value='';
   renderDlrTradeGrid();
   await renderDLR(activeConversation.id);
 };
