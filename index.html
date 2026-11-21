@@ -465,25 +465,6 @@
     .pr-total-row td{font-weight:700;border-top:2px solid #16243a;border-bottom:none;}
     .pr-footer{margin-top:24px;font-size:10px;color:#999;text-align:center;}
   }
-  /* ---- Expenses (petty cash) ---- */
-  .exp-badge{font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:4px;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;}
-  .exp-badge.posted{background:color-mix(in srgb, var(--warning) 20%, transparent);color:var(--warning);}
-  .exp-badge.approved{background:color-mix(in srgb, var(--success) 16%, transparent);color:var(--success);}
-  .exp-badge.queried{background:color-mix(in srgb, var(--pri-medium) 20%, transparent);color:var(--pri-medium);}
-  .exp-badge.rejected{background:color-mix(in srgb, var(--danger) 18%, transparent);color:var(--danger);}
-  .exp-badge.late{background:color-mix(in srgb, var(--danger) 18%, transparent);color:var(--danger);}
-  .exp-tag{display:inline-block;font-size:10.5px;color:var(--text-secondary);border:1px solid var(--border);border-radius:3px;padding:1px 6px;margin:4px 4px 0 0;}
-  .exp-tag.warn{color:var(--warning);border-color:var(--warning);}
-  .exp-note{font-size:12px;color:var(--text-secondary);background:var(--bg-card-2);border:1px solid var(--border);border-radius:6px;padding:9px 11px;margin-bottom:12px;line-height:1.45;}
-  .exp-chosen{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--bg-card-2);border:1px solid var(--border);border-radius:4px;padding:11px 14px;font-size:14px;font-weight:600;}
-  .exp-chosen .chg{font-size:12px;color:var(--accent);font-weight:600;cursor:pointer;}
-  .exp-results{margin-top:8px;display:flex;flex-direction:column;gap:6px;}
-  .exp-results .chip{display:flex;align-items:center;gap:8px;}
-  .exp-check{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text-primary);margin-top:10px;cursor:pointer;}
-  .exp-check input{width:18px;height:18px;flex-shrink:0;}
-  .exp-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
-  .exp-actions .btn{margin-top:0;}
-  .exp-thumb{width:100%;max-height:150px;object-fit:cover;border-radius:8px;margin-top:8px;cursor:pointer;background:var(--bg-card-2);min-height:60px;}
 </style>
 </head>
 <body>
@@ -606,7 +587,6 @@
       <div class="subtab" data-psub="pm">P&amp;M</div>
       <div class="subtab" data-psub="pour">Pour</div>
       <div class="subtab" data-psub="hindrance">Hindrance</div>
-      <div class="subtab" data-psub="expense">Expenses</div>
     </div>
     <div id="pane-project-tasks" style="flex:1;display:flex;flex-direction:column;min-height:0;">
       <div class="quick-add-card">
@@ -623,6 +603,7 @@
       </div>
       <div class="chip-filter-row" style="padding-top:6px;">
         <div class="icon-btn task" id="btn-add-category" style="width:32px;height:32px;font-size:12px;"><i class="ti ti-tag"></i></div>
+        <div id="btn-export-proj-tasks" style="display:none;margin-left:10px;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--accent-dark);cursor:pointer;padding:6px 10px;border:1px solid var(--accent-dark);border-radius:8px;"><i class="ti ti-file-type-pdf"></i> Export PDF</div>
         <div class="view-toggle" style="margin-left:auto;">
           <div class="vt active" data-projtaskview="list"><i class="ti ti-list"></i> List</div>
           <div class="vt" data-projtaskview="board"><i class="ti ti-layout-kanban"></i> Board</div>
@@ -705,10 +686,15 @@
             <label>Trade / role</label>
             <div id="dlr-trade-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px;"></div>
           </div>
-          <div><label>Subcontractor (optional)</label>
-            <select id="dlr-sub-select"><option value="">— None —</option></select>
-            <input type="text" id="dlr-sub-input" placeholder="Type subcontractor name" style="display:none;margin-top:6px;">
-            <div id="dlr-sub-hint" style="font-size:11px;color:var(--text-muted);margin-top:4px;"></div></div>
+          <div><label>Subcontractor (choose from list)</label>
+            <select id="dlr-sub-input"><option value="">— None / own labour —</option></select>
+            <div id="dlr-sub-manage-link" style="display:none;margin-top:6px;font-size:12px;font-weight:700;color:var(--accent-dark);cursor:pointer;"><i class="ti ti-settings"></i> Manage subcontractor list</div>
+            <div id="dlr-sub-manage" style="display:none;margin-top:8px;padding:10px;border:1px solid var(--border);border-radius:10px;background:#FAFAF7;">
+              <div id="dlr-sub-list" style="font-size:13px;"></div>
+              <div style="display:flex;gap:6px;margin-top:8px;"><input type="text" id="dlr-sub-new" placeholder="New subcontractor name" style="flex:1;"><button class="btn secondary" id="btn-dlr-sub-add" style="margin-top:0;width:auto;padding:0 14px;">Add</button></div>
+              <div style="font-size:11px;color:var(--text-secondary);margin-top:6px;">Approved subcontractors (synced from CAMELS) show for every project. Names added here appear for this project only. Staff can only pick from these lists.</div>
+            </div>
+          </div>
           <div><label>Headcount</label><input type="number" id="dlr-count-input" min="0" placeholder="0"></div>
           <button class="btn full" id="btn-add-dlr-entry" style="margin-top:2px;">Add trade</button>
         </div>
@@ -776,19 +762,6 @@
         <div id="pour-entries-list"></div>
         <div class="cs-heading" style="margin-top:22px;">Last 7 days</div>
         <div id="pour-history-list"></div>
-      </div>
-    </div>
-
-    <!-- EXPENSES PANE -->
-    <div id="pane-project-expense" style="flex:1;display:none;flex-direction:column;min-height:0;">
-      <div class="chip-filter-row" id="exp-filter-row" style="align-items:center;"></div>
-      <div style="flex:1;overflow-y:auto;padding:0 0 14px;">
-        <div id="exp-float"></div>
-        <div id="exp-list" style="padding:10px 14px 0;"></div>
-        <div style="display:flex;gap:8px;padding:10px 14px 0;">
-          <button class="btn gold" id="btn-add-expense" style="margin-top:0;flex:1;"><i class="ti ti-receipt"></i> Post bill</button>
-          <button class="btn secondary" id="btn-add-advance" style="margin-top:0;flex:1;"><i class="ti ti-arrow-forward-up"></i> Advance to shop</button>
-        </div>
       </div>
     </div>
 
@@ -1195,106 +1168,6 @@
       <div class="field"><label>Lunch break start</label><input type="time" id="schedule-lunch-start" value="13:00"></div>
       <div class="field"><label>Lunch break end</label><input type="time" id="schedule-lunch-end" value="14:00"></div>
       <button class="btn gold" id="btn-save-schedule">Save schedule</button>
-    </div>
-  </div>
-
-  <!-- SHEET: post expense bill -->
-  <div class="sheet-backdrop" id="exp-bill-sheet-backdrop"></div>
-  <div class="sheet" id="exp-bill-sheet">
-    <div class="sheet-handle"></div>
-    <div class="sheet-title"><span>Post a bill</span><span class="sheet-close" data-close="exp-bill-sheet">✕</span></div>
-    <div class="sheet-body">
-      <div id="exp-adv-banner" class="exp-note" style="display:none;"></div>
-      <div id="exp-photo-preview" style="display:none;margin-bottom:8px;"><img id="exp-photo-img" src="" style="width:100%;max-height:200px;object-fit:cover;border-radius:10px;"></div>
-      <button class="btn secondary" id="btn-exp-photo" style="margin-top:0;"><i class="ti ti-camera"></i> <span id="exp-photo-label">Take photo of the bill</span></button>
-      <input type="file" id="exp-photo-input" accept="image/*" capture="environment" style="display:none;">
-
-      <div class="field" style="margin-top:14px;"><label>Shop / vendor</label>
-        <div id="exp-vendor-chosen" class="exp-chosen" style="display:none;"></div>
-        <input type="text" id="exp-vendor-search" placeholder="Search shop name…" autocomplete="off">
-        <div id="exp-vendor-results" class="exp-results"></div>
-      </div>
-      <div class="field"><label>Category</label>
-        <div class="chip-row" id="exp-cat-chips"></div>
-      </div>
-      <div class="field"><label>What was bought</label><input type="text" id="exp-desc" placeholder="e.g. 20 bags cement, 2 loads M-sand" autocomplete="off"></div>
-      <div style="display:flex;gap:10px;">
-        <div class="field" style="flex:1;"><label>Bill amount (₹)</label><input type="number" id="exp-amount" inputmode="decimal" min="0" step="0.01" placeholder="0"></div>
-        <div class="field" style="flex:1;"><label>Bill date</label><input type="date" id="exp-date"></div>
-      </div>
-      <div class="field"><label>Bill number (optional)</label><input type="text" id="exp-billno" placeholder="As printed on the bill" autocomplete="off"></div>
-      <div class="field"><label>Work item (optional)</label><select id="exp-wbs"><option value="">— Not linked —</option></select></div>
-      <label class="exp-check"><input type="checkbox" id="exp-has-gst"> Bill has GSTIN / GST invoice</label>
-      <div class="field" id="exp-gst-wrap" style="display:none;margin-top:8px;"><label>GST amount on bill (₹, optional)</label><input type="number" id="exp-gst-amt" inputmode="decimal" min="0" step="0.01"></div>
-      <label class="exp-check"><input type="checkbox" id="exp-emergency"> Emergency buy — not raised through indent / PO</label>
-      <button class="btn gold" id="btn-save-expense" style="margin-top:14px;">Post bill</button>
-    </div>
-  </div>
-
-  <!-- SHEET: bill posted -->
-  <div class="sheet-backdrop" id="exp-done-sheet-backdrop"></div>
-  <div class="sheet" id="exp-done-sheet">
-    <div class="sheet-handle"></div>
-    <div class="sheet-title"><span>Bill posted</span><span class="sheet-close" data-close="exp-done-sheet">✕</span></div>
-    <div class="sheet-body">
-      <div id="exp-done-summary" style="font-size:14px;line-height:1.5;white-space:pre-line;margin-bottom:12px;"></div>
-      <button class="btn gold" id="btn-exp-share" style="margin-top:0;"><i class="ti ti-brand-whatsapp"></i> Share on WhatsApp</button>
-      <button class="btn secondary" data-close="exp-done-sheet">Done</button>
-    </div>
-  </div>
-
-  <!-- SHEET: advance to shop -->
-  <div class="sheet-backdrop" id="exp-adv-sheet-backdrop"></div>
-  <div class="sheet" id="exp-adv-sheet">
-    <div class="sheet-handle"></div>
-    <div class="sheet-title"><span>Advance to a shop</span><span class="sheet-close" data-close="exp-adv-sheet">✕</span></div>
-    <div class="sheet-body">
-      <div class="exp-note">Use this when you pay a shop money in advance (e.g. power tool rental). It stays open until bills are adjusted against it or the shop refunds the balance.</div>
-      <div id="adv-photo-preview" style="display:none;margin-bottom:8px;"><img id="adv-photo-img" src="" style="width:100%;max-height:200px;object-fit:cover;border-radius:10px;"></div>
-      <button class="btn secondary" id="btn-adv-photo" style="margin-top:0;"><i class="ti ti-camera"></i> <span id="adv-photo-label">Take photo of receipt / slip</span></button>
-      <input type="file" id="adv-photo-input" accept="image/*" capture="environment" style="display:none;">
-      <div class="field" style="margin-top:14px;"><label>Shop / vendor</label>
-        <div id="adv-vendor-chosen" class="exp-chosen" style="display:none;"></div>
-        <input type="text" id="adv-vendor-search" placeholder="Search shop name…" autocomplete="off">
-        <div id="adv-vendor-results" class="exp-results"></div>
-      </div>
-      <div style="display:flex;gap:10px;">
-        <div class="field" style="flex:1;"><label>Advance (₹)</label><input type="number" id="adv-amount" inputmode="decimal" min="0" step="0.01" placeholder="0"></div>
-        <div class="field" style="flex:1;"><label>Date</label><input type="date" id="adv-date"></div>
-      </div>
-      <div class="field"><label>Purpose</label><input type="text" id="adv-purpose" placeholder="e.g. Breaker + core cutter for 5 days" autocomplete="off"></div>
-      <button class="btn gold" id="btn-save-advance" style="margin-top:8px;">Save advance</button>
-    </div>
-  </div>
-
-  <!-- SHEET: give / take back cash -->
-  <div class="sheet-backdrop" id="exp-float-sheet-backdrop"></div>
-  <div class="sheet" id="exp-float-sheet">
-    <div class="sheet-handle"></div>
-    <div class="sheet-title"><span id="exp-float-title">Cash</span><span class="sheet-close" data-close="exp-float-sheet">✕</span></div>
-    <div class="sheet-body">
-      <div class="field"><label>Action</label>
-        <div class="chip-row" id="exp-float-kind">
-          <div class="chip selected" data-kind="topup">Give cash</div>
-          <div class="chip" data-kind="return">Take back cash</div>
-        </div>
-      </div>
-      <div class="field"><label>Amount (₹)</label><input type="number" id="exp-float-amount" inputmode="decimal" min="0" step="0.01" placeholder="0"></div>
-      <div class="field"><label>Note (optional)</label><input type="text" id="exp-float-note" placeholder="e.g. Weekly float top-up" autocomplete="off"></div>
-      <button class="btn gold" id="btn-save-float" style="margin-top:8px;">Save</button>
-    </div>
-  </div>
-
-  <!-- SHEET: expense limits -->
-  <div class="sheet-backdrop" id="exp-limits-sheet-backdrop"></div>
-  <div class="sheet" id="exp-limits-sheet">
-    <div class="sheet-handle"></div>
-    <div class="sheet-title"><span>Cash limits for this project</span><span class="sheet-close" data-close="exp-limits-sheet">✕</span></div>
-    <div class="sheet-body">
-      <div class="field"><label>Cash in hand limit per person (₹)</label><input type="number" id="lim-float" inputmode="decimal" min="0" step="100"></div>
-      <div class="field"><label>Single bill above this needs owner approval (₹)</label><input type="number" id="lim-bill" inputmode="decimal" min="0" step="100"></div>
-      <div class="field"><label>Flag open advances older than (days)</label><input type="number" id="lim-days" inputmode="numeric" min="1" step="1"></div>
-      <button class="btn gold" id="btn-save-limits" style="margin-top:8px;">Save limits</button>
     </div>
   </div>
 
@@ -1749,13 +1622,16 @@ async function renderTasksHome(){
 
 /* ================= EXPORT TASK LIST AS PDF (owner) ================= */
 let txScope = 'open', txFile = null;
-$('btn-export-tasks').onclick = () => {
+function openTaskExport(preselect){
   const sel = $('tx-project');
   sel.innerHTML = `<option value="all">All projects</option>` + conversations.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
-  sel.value = (activeProjectFilter && activeProjectFilter !== 'all' && conversations.some(c=>c.id===activeProjectFilter)) ? activeProjectFilter : 'all';
+  const want = preselect || activeProjectFilter;
+  sel.value = (want && want !== 'all' && conversations.some(c=>c.id===want)) ? want : 'all';
   $('tx-result').style.display = 'none'; txFile = null;
   toggleSheet('task-export-sheet', true);
-};
+}
+$('btn-export-tasks').onclick = () => openTaskExport(null);
+$('btn-export-proj-tasks').onclick = () => openTaskExport(activeConversation && activeConversation.id);
 $('tx-scope').querySelectorAll('[data-scope]').forEach(ch => {
   ch.onclick = () => {
     txScope = ch.getAttribute('data-scope');
@@ -2205,7 +2081,6 @@ document.querySelectorAll('.subtab').forEach(el=>{
     $('pane-project-pm').style.display = sub==='pm' ? 'flex' : 'none';
     $('pane-project-pour').style.display = sub==='pour' ? 'flex' : 'none';
     $('pane-project-hindrance').style.display = sub==='hindrance' ? 'flex' : 'none';
-    $('pane-project-expense').style.display = sub==='expense' ? 'flex' : 'none';
     if (sub==='tasks') await renderProjectTasks();
     if (sub==='chat') { await loadMessages(activeConversation.id); subscribeMessages(activeConversation.id); }
     if (sub==='progress') await renderWBS(activeConversation.id);
@@ -2213,7 +2088,6 @@ document.querySelectorAll('.subtab').forEach(el=>{
     if (sub==='pm') await renderPM(activeConversation.id);
     if (sub==='pour') await initPour(activeConversation.id);
     if (sub==='hindrance') await renderHindrances(activeConversation.id);
-    if (sub==='expense') await renderExpenses(activeConversation.id);
   };
 });
 
@@ -2244,6 +2118,7 @@ async function renderProjectTasks(){
     completedTasks = completedTasks.filter(matches);
   }
   const canManage = (me.role === 'owner' || me.role === 'pm');
+  $('btn-export-proj-tasks').style.display = (me.role === 'owner') ? 'flex' : 'none';
   const groups = categories.map(c => ({ cat: c, tasks: allTasks.filter(t => t.category_id === c.id) }));
   const uncategorized = allTasks.filter(t => !t.category_id);
   if (uncategorized.length || !categories.length) groups.push({ cat: null, tasks: uncategorized });
@@ -3404,7 +3279,7 @@ $('btn-copy-yesterday-dlr').onclick = async () => {
     const yesterday = new Date(dlrCurrentDate); yesterday.setDate(yesterday.getDate()-1);
     const yesterdayStr = dlrDateStr(yesterday);
 
-    const { data: yEntries, error: fetchErr } = await sb.from('ea_dlr_entries').select('trade, subcontractor, subcontractor_code, headcount').eq('conversation_id', activeConversation.id).eq('entry_date', yesterdayStr);
+    const { data: yEntries, error: fetchErr } = await sb.from('ea_dlr_entries').select('trade, subcontractor, headcount').eq('conversation_id', activeConversation.id).eq('entry_date', yesterdayStr);
     if (fetchErr) throw fetchErr;
     if (!yEntries || !yEntries.length) { alert("No DLR entries found for yesterday to copy."); return; }
 
@@ -3414,7 +3289,7 @@ $('btn-copy-yesterday-dlr').onclick = async () => {
     }
 
     const { error: insertErr } = await sb.from('ea_dlr_entries').insert(
-      yEntries.map(e => ({ conversation_id: activeConversation.id, entry_date: todayForView, trade: e.trade, subcontractor: e.subcontractor, subcontractor_code: e.subcontractor_code, headcount: e.headcount, created_by: me.id }))
+      yEntries.map(e => ({ conversation_id: activeConversation.id, entry_date: todayForView, trade: e.trade, subcontractor: e.subcontractor, headcount: e.headcount, created_by: me.id }))
     );
     if (insertErr) throw insertErr;
     await renderDLR(activeConversation.id);
@@ -3503,29 +3378,48 @@ async function renderDLR(convId){
   `).join('') : `<p style="font-size:12px;color:var(--text-muted);">No history yet.</p>`;
 }
 
-/* Starred subcontractors from CAMELS (synced automatically into ea_subcontractors) */
-let dlrSubs = [];
-async function loadDlrSubs(){
-  try{
-    const { data, error } = await sb.from('ea_subcontractors').select('id, acct_code, name, phone').eq('is_active', true).order('name');
-    if (!error) dlrSubs = data || [];
-  }catch(e){ console.error('Subcontractor list failed', e); }
-  renderDlrSubSelect();
-}
-function renderDlrSubSelect(){
-  const sel = $('dlr-sub-select'); if (!sel) return;
-  sel.innerHTML = '<option value="">— None —</option>' + dlrSubs.map(s=>`<option value="${esc(s.acct_code)}">${esc(s.name)} · ${esc(s.acct_code)}</option>`).join('') + '<option value="__other">Other (type name)…</option>';
-  $('dlr-sub-input').style.display = 'none'; $('dlr-sub-input').value = '';
-  $('dlr-sub-hint').textContent = dlrSubs.length ? '' : 'No starred subcontractors yet. Star them in CAMELS, or choose “Other” to type a name.';
-}
-$('dlr-sub-select').onchange = () => {
-  const other = $('dlr-sub-select').value === '__other';
-  $('dlr-sub-input').style.display = other ? 'block' : 'none';
-  if (other) $('dlr-sub-input').focus();
-};
-
 const DLR_TRADES = ['Foreman','Masons','Helpers','Carpenters','Carp Helpers','Steel fitters','St helpers','Electrician','Operators','Others'];
 let dlrSelectedTrade = null;
+let dlrSubs = [];
+async function loadDlrSubs(){
+  if (!activeConversation) return;
+  const [{ data }, { data: master }] = await Promise.all([
+    sb.from('ea_project_subcontractors').select('id,name').eq('conversation_id', activeConversation.id).order('name'),
+    sb.rpc('ea_list_subcontractors')
+  ]);
+  dlrSubs = data || [];
+  const masterList = master || [];
+  const masterNames = new Set(masterList.map(x => x.name.trim().toLowerCase()));
+  const extra = dlrSubs.filter(x => !masterNames.has(x.name.trim().toLowerCase()));
+  const sel = $('dlr-sub-input'); const cur = sel.value;
+  sel.innerHTML = '<option value="">— None / own labour —</option>' +
+    (masterList.length ? `<optgroup label="Approved subcontractors">` + masterList.map(x=>`<option value="${esc(x.name)}">${esc(x.name)}${x.acct_code?' · '+esc(x.acct_code):''}</option>`).join('') + `</optgroup>` : '') +
+    (extra.length ? `<optgroup label="Other (this project)">` + extra.map(x=>`<option value="${esc(x.name)}">${esc(x.name)}</option>`).join('') + `</optgroup>` : '');
+  sel.value = [...masterList, ...extra].some(x=>x.name===cur) ? cur : '';
+  const mg = (me.role === 'owner' || me.role === 'pm');
+  $('dlr-sub-manage-link').style.display = mg ? 'block' : 'none';
+  if (!mg) $('dlr-sub-manage').style.display = 'none';
+  $('dlr-sub-list').innerHTML = dlrSubs.length
+    ? dlrSubs.map(x=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);"><span>${esc(x.name)}</span><span data-delsub="${x.id}" style="cursor:pointer;color:#A8443A;padding:0 6px;">✕</span></div>`).join('')
+    : '<div style="color:var(--text-secondary);">No subcontractors added yet.</div>';
+  $('dlr-sub-list').querySelectorAll('[data-delsub]').forEach(el => {
+    el.onclick = async () => {
+      const { error } = await sb.from('ea_project_subcontractors').delete().eq('id', el.getAttribute('data-delsub'));
+      if (error) { alert('Could not remove: ' + error.message); return; }
+      await loadDlrSubs();
+    };
+  });
+}
+$('dlr-sub-manage-link').onclick = () => { const m = $('dlr-sub-manage'); m.style.display = m.style.display === 'none' ? 'block' : 'none'; };
+$('btn-dlr-sub-add').onclick = async () => {
+  const name = $('dlr-sub-new').value.trim().replace(/\s+/g,' ');
+  if (!name) return;
+  const { error } = await sb.from('ea_project_subcontractors').insert({ conversation_id: activeConversation.id, name });
+  if (error) { alert(error.code === '23505' ? 'That subcontractor is already in the list.' : 'Could not add: ' + error.message); return; }
+  $('dlr-sub-new').value = '';
+  await loadDlrSubs();
+};
+
 function renderDlrTradeGrid(){
   dlrSelectedTrade = null;
   $('dlr-trade-grid').innerHTML = DLR_TRADES.map(t=>`<div class="chip" data-trade="${esc(t)}" style="text-align:center;">${esc(t)}</div>`).join('');
@@ -3539,15 +3433,13 @@ function renderDlrTradeGrid(){
 }
 
 $('btn-add-dlr-entry').onclick = async () => {
-  const selv = $('dlr-sub-select').value; let sub = '', subCode = null;
-  if (selv === '__other') sub = $('dlr-sub-input').value.trim();
-  else if (selv) { const s0 = dlrSubs.find(x => x.acct_code === selv); sub = s0 ? s0.name : ''; subCode = s0 ? s0.acct_code : null; }
+  const sub = $('dlr-sub-input').value.trim();
   const count = parseInt($('dlr-count-input').value, 10) || 0;
   const dateStr = dlrDateStr(dlrCurrentDate);
   if (!dlrSelectedTrade) { alert('Pick a trade'); return; }
-  const { error } = await sb.from('ea_dlr_entries').insert({ conversation_id: activeConversation.id, entry_date: dateStr, trade: dlrSelectedTrade, subcontractor: sub||null, subcontractor_code: subCode, headcount: count, created_by: me.id });
+  const { error } = await sb.from('ea_dlr_entries').insert({ conversation_id: activeConversation.id, entry_date: dateStr, trade: dlrSelectedTrade, subcontractor: sub||null, headcount: count, created_by: me.id });
   if (error) { alert('Could not add entry: ' + error.message); return; }
-  renderDlrSubSelect(); $('dlr-count-input').value='';
+  $('dlr-sub-input').value=''; $('dlr-count-input').value='';
   renderDlrTradeGrid();
   await renderDLR(activeConversation.id);
 };
@@ -4102,495 +3994,6 @@ $('btn-export-pour-csv').onclick = () => {
 };
 
 /* ================= HINDRANCE TRACKER ================= */
-/* ---------------- EXPENSES (petty cash / imprest) ---------------- */
-const EXP_CATS = [['masonry','Masonry'],['material','Material'],['consumable','Consumable'],['tool_rental','Tool rental'],['transport','Transport'],['other','Other']];
-const EXP_CAT_LABEL = Object.fromEntries(EXP_CATS);
-const EXP_STATUS_LABEL = { posted:'Pending', approved:'Approved', queried:'Query', rejected:'Rejected' };
-const EXP_DEFAULTS = { float_cap: 10000, bill_limit: 5000, advance_alert_days: 15 };
-const inr = (n) => '₹' + Number(n||0).toLocaleString('en-IN', { maximumFractionDigits: 2 });
-const localISO = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); };
-const expDaysSince = (iso) => Math.max(0, Math.floor((new Date(localISO()) - new Date(iso)) / 86400000));
-
-let expS = { convId:null, bills:[], advances:[], summary:[], members:[], vendors:[], settings:{...EXP_DEFAULTS}, filter:null, wbsFor:null };
-let expPhoto = null, expCat = null, expGeo = null, expLinkAdvance = null, expLastShare = null, advPhoto = null;
-let expFloatHolder = null, expFloatKind = 'topup', expSaving = false;
-const vpState = { exp:null, adv:null };
-
-const expIsOwner = () => me.role === 'owner';
-const expCanManage = () => me.role === 'owner' || me.role === 'pm' || expS.members.some(m => m.user_id === me.id && m.role === 'pm');
-const expBalanceOf = (uid) => {
-  const r = expS.summary.find(x => x.user_id === uid);
-  const rec = Number(r?.received || 0), sp = Number(r?.spent || 0);
-  return { rec, sp, bal: rec - sp };
-};
-
-async function renderExpenses(convId){
-  if (expS.convId !== convId) { expS.convId = convId; expS.filter = null; }
-  const [b, a, s, m, v, st] = await Promise.all([
-    sb.from('ea_exp_bills').select('*, spender:ea_users!spent_by(name)').eq('conversation_id', convId).order('created_at', { ascending:false }).limit(300),
-    sb.from('ea_exp_advances').select('*, vendor:ea_exp_vendors!vendor_id(name), holder:ea_users!given_by(name)').eq('conversation_id', convId).order('advance_date', { ascending:false }),
-    sb.from('ea_exp_float_summary').select('*').eq('conversation_id', convId),
-    sb.from('ea_conversation_members').select('user_id, role, ea_users!user_id(name, active)').eq('conversation_id', convId),
-    sb.from('ea_exp_vendors').select('*').eq('active', true).order('is_regular', { ascending:false }).order('name'),
-    sb.from('ea_exp_settings').select('*').eq('conversation_id', convId).maybeSingle()
-  ]);
-  const err = b.error || a.error || s.error || m.error || v.error || st.error;
-  if (err) { alert('Could not load expenses: ' + err.message); return; }
-  expS.bills = b.data || []; expS.advances = a.data || []; expS.summary = s.data || [];
-  expS.members = m.data || []; expS.vendors = v.data || [];
-  expS.settings = st.data ? { ...EXP_DEFAULTS, ...st.data } : { ...EXP_DEFAULTS };
-  const mgr = expCanManage();
-  if (!expS.filter || (!mgr && expS.filter === 'review')) expS.filter = mgr ? 'review' : 'mine';
-  renderExpFloat(); renderExpFilters(); renderExpList();
-}
-
-function renderExpFloat(){
-  const mgr = expCanManage();
-  const cap = Number(expS.settings.float_cap);
-  const hasMine = expS.summary.some(x => x.user_id === me.id);
-  let html = '';
-  if (hasMine) {
-    const mine = expBalanceOf(me.id);
-    html += `<div class="wbs-item" style="margin:10px 14px 0;">
-      <div style="font-size:11px;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;font-weight:600;">My cash in hand</div>
-      <div style="font-family:var(--font-display);font-size:28px;font-weight:700;color:${mine.bal<0?'var(--danger)':'var(--text-primary)'};">${inr(Math.abs(mine.bal))}${mine.bal<0?' <span style="font-size:12px;font-weight:600;">owed to you</span>':''}</div>
-      <div style="font-size:12px;color:var(--text-secondary);">Received ${inr(mine.rec)} · Spent ${inr(mine.sp)} · Limit ${inr(cap)}</div>
-    </div>`;
-  }
-  if (mgr) {
-    const rows = expS.members.map(mm => {
-      const x = expBalanceOf(mm.user_id);
-      return `<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--border);">
-        <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;">${esc(mm.ea_users?.name||'')}</div>
-        <div style="font-size:11px;color:var(--text-muted);">Received ${inr(x.rec)} · Spent ${inr(x.sp)}</div></div>
-        <div style="font-family:var(--font-display);font-weight:700;color:${x.bal<0?'var(--danger)':'var(--text-primary)'};">${x.bal<0?'-':''}${inr(Math.abs(x.bal))}</div>
-        <button class="btn secondary small" data-float-holder="${mm.user_id}" style="margin:0;">Cash</button></div>`;
-    }).join('');
-    html += `<div class="wbs-item" style="margin:8px 14px 0;">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-        <span style="font-size:11px;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase;font-weight:600;">Team cash in hand</span>
-        <span data-exp-limits="1" style="font-size:12px;color:var(--accent);cursor:pointer;"><i class="ti ti-settings"></i> Limits</span>
-      </div>${rows || '<div style="font-size:12px;color:var(--text-muted);">No members on this project.</div>'}</div>`;
-  }
-  $('exp-float').innerHTML = html;
-  $('exp-float').querySelectorAll('[data-float-holder]').forEach(btn => { btn.onclick = () => openFloatSheet(btn.getAttribute('data-float-holder')); });
-  const lim = $('exp-float').querySelector('[data-exp-limits]');
-  if (lim) lim.onclick = openLimitsSheet;
-}
-
-function renderExpFilters(){
-  const mgr = expCanManage();
-  const pending = expS.bills.filter(x => x.status === 'posted').length;
-  const openAdv = expS.advances.filter(x => x.status === 'open').length;
-  const chips = [['mine','Mine',null],['all','All',null],['advances','Advances',openAdv]];
-  if (mgr) chips.unshift(['review','To review',pending]);
-  $('exp-filter-row').innerHTML = chips.map(([k,l,n]) => `<div class="chip-filter ${expS.filter===k?'selected':''}" data-ef="${k}">${l}${n!=null?' '+n:''}</div>`).join('');
-  $('exp-filter-row').querySelectorAll('[data-ef]').forEach(el => {
-    el.onclick = () => { expS.filter = el.getAttribute('data-ef'); renderExpFilters(); renderExpList(); };
-  });
-}
-
-function expShareText(x){
-  const lines = ['*CCI Site Expense*', `Project: ${activeConversation?.name || ''}`, `Shop: ${x.vendor_name}`, `Item: ${x.description}`,
-    `Amount: ${inr(x.amount)}`, `Date: ${x.bill_date}`];
-  if (x.bill_no) lines.push(`Bill no: ${x.bill_no}`);
-  lines.push(`Posted by: ${x.spender?.name || me.name}`, `Status: ${EXP_STATUS_LABEL[x.status] || x.status}`, `Ref: ${x.id.slice(0,8).toUpperCase()}`);
-  return lines.join('\n');
-}
-function expShare(text){ window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank'); }
-
-function expBillCard(x){
-  const mgr = expCanManage(), owner = expIsOwner();
-  const lim = Number(expS.settings.bill_limit);
-  const own = x.spent_by === me.id;
-  const adv = x.advance_id ? expS.advances.find(a => a.id === x.advance_id) : null;
-  const tags = [];
-  if (!x.has_gst) tags.push('<span class="exp-tag">No GST bill</span>');
-  if (x.emergency_purchase) tags.push('<span class="exp-tag warn">Emergency buy</span>');
-  if (adv) tags.push(`<span class="exp-tag">Against advance · ${esc(adv.vendor?.name||'')}</span>`);
-  if (Number(x.amount) > lim) tags.push('<span class="exp-tag warn">Above limit</span>');
-  let actions = '';
-  if (mgr && x.status === 'posted') {
-    if (own && !owner) actions += `<span style="font-size:12px;color:var(--text-muted);align-self:center;">Needs another approver</span>`;
-    else if (Number(x.amount) > lim && !owner) actions += `<span style="font-size:12px;color:var(--warning);align-self:center;">Above ${inr(lim)} — owner approval needed</span>`;
-    else actions += `<button class="btn gold small" data-exp-act="approve" data-id="${x.id}">Approve</button>`;
-    if (!own) actions += `<button class="btn secondary small" data-exp-act="query" data-id="${x.id}">Query</button><button class="btn secondary small" data-exp-act="reject" data-id="${x.id}" style="color:var(--danger);">Reject</button>`;
-  }
-  if (own && x.status === 'queried') actions += `<button class="btn gold small" data-exp-act="resubmit" data-id="${x.id}">Reply &amp; resubmit</button>`;
-  actions += `<button class="btn secondary small" data-exp-act="share" data-id="${x.id}"><i class="ti ti-brand-whatsapp"></i> Share</button>`;
-  const stripe = { posted:'var(--warning)', approved:'var(--success)', queried:'var(--pri-medium)', rejected:'var(--danger)' }[x.status];
-  return `<div class="wbs-item" style="border-left:4px solid ${stripe};">
-    <div class="wbs-item-top">
-      <span style="font-family:var(--font-display);font-size:12px;font-weight:600;letter-spacing:.06em;color:var(--text-muted);">${esc(EXP_CAT_LABEL[x.category]||x.category).toUpperCase()}</span>
-      <span class="exp-badge ${x.status}">${EXP_STATUS_LABEL[x.status]||x.status}</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-top:6px;">
-      <div style="font-size:14px;font-weight:600;min-width:0;">${esc(x.vendor_name)}</div>
-      <div style="font-family:var(--font-display);font-size:20px;font-weight:700;">${inr(x.amount)}</div>
-    </div>
-    <div style="font-size:13px;color:var(--text-secondary);margin-top:2px;">${esc(x.description)}</div>
-    <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">${esc(x.bill_date)} · ${esc(x.spender?.name||'')}${x.bill_no?' · Bill '+esc(x.bill_no):''}</div>
-    <div>${tags.join('')}</div>
-    ${x.review_note && x.status !== 'approved' ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:8px;padding-top:6px;border-top:1px solid var(--border);"><strong>Approver note:</strong> ${esc(x.review_note)}</div>` : ''}
-    <img class="exp-thumb" data-path="${esc(x.photo_path)}" alt="Bill photo" style="display:none;">
-    <div class="exp-actions">${actions}</div>
-  </div>`;
-}
-
-function expAdvCard(a){
-  const mgr = expCanManage();
-  const linked = expS.bills.filter(b => b.advance_id === a.id && b.status !== 'rejected').reduce((s,b) => s + Number(b.amount), 0);
-  const out = Number(a.amount) - linked - Number(a.refunded_amount);
-  const age = expDaysSince(a.advance_date);
-  const late = a.status === 'open' && age > Number(expS.settings.advance_alert_days);
-  let actions = '';
-  if (a.status === 'open') {
-    actions += `<button class="btn gold small" data-adv-act="bill" data-id="${a.id}">Add bill against this</button>`;
-    if (mgr) actions += `<button class="btn secondary small" data-adv-act="close" data-id="${a.id}">Close advance</button>`;
-  }
-  return `<div class="wbs-item" style="border-left:4px solid ${a.status==='open'?(late?'var(--danger)':'var(--warning)'):'var(--success)'};">
-    <div class="wbs-item-top">
-      <span style="font-family:var(--font-display);font-size:12px;font-weight:600;letter-spacing:.06em;color:var(--text-muted);">ADVANCE</span>
-      <span>${late?'<span class="exp-badge late">'+age+' days open</span> ':''}<span class="exp-badge ${a.status==='open'?'posted':'approved'}">${a.status==='open'?'Open':'Closed'}</span></span>
-    </div>
-    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-top:6px;">
-      <div style="font-size:14px;font-weight:600;">${esc(a.vendor?.name||'')}</div>
-      <div style="font-family:var(--font-display);font-size:20px;font-weight:700;">${inr(a.amount)}</div>
-    </div>
-    <div style="font-size:13px;color:var(--text-secondary);margin-top:2px;">${esc(a.purpose)}</div>
-    <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">${esc(a.advance_date)} · paid by ${esc(a.holder?.name||'')}</div>
-    <div style="font-size:12px;margin-top:8px;padding-top:6px;border-top:1px solid var(--border);color:var(--text-secondary);">
-      Adjusted by bills ${inr(linked)} · Refunded ${inr(a.refunded_amount)} · <strong style="color:${out>0?'var(--text-primary)':'var(--success)'};">Balance with shop ${inr(Math.max(out,0))}</strong>${out<0?' <span style="color:var(--warning);">(bills exceed advance by '+inr(-out)+')</span>':''}
-    </div>
-    ${a.close_note ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:4px;"><strong>Closed:</strong> ${esc(a.close_note)}</div>` : ''}
-    ${a.photo_path ? `<img class="exp-thumb" data-path="${esc(a.photo_path)}" alt="Advance receipt" style="display:none;">` : ''}
-    <div class="exp-actions">${actions}</div>
-  </div>`;
-}
-
-function renderExpList(){
-  const f = expS.filter;
-  let html = '';
-  if (f === 'advances') {
-    html = expS.advances.length ? expS.advances.map(expAdvCard).join('') : `<div class="empty-state"><div class="big"><i class="ti ti-arrow-forward-up"></i></div>No advances recorded.</div>`;
-  } else {
-    let list = expS.bills;
-    if (f === 'mine') list = list.filter(x => x.spent_by === me.id);
-    if (f === 'review') list = list.filter(x => x.status === 'posted');
-    html = list.length ? list.map(expBillCard).join('') : `<div class="empty-state"><div class="big"><i class="ti ti-receipt"></i></div>${f==='review'?'No bills waiting for review.':'No bills yet.'}</div>`;
-  }
-  $('exp-list').innerHTML = html;
-  expLoadThumbs();
-}
-
-async function expLoadThumbs(){
-  const imgs = [...$('exp-list').querySelectorAll('img[data-path]')];
-  if (!imgs.length) return;
-  const paths = [...new Set(imgs.map(i => i.getAttribute('data-path')))];
-  const { data, error } = await sb.storage.from('eagles-bills').createSignedUrls(paths, 3600);
-  if (error || !data) return;
-  const map = {}; data.forEach(d => { if (d.signedUrl) map[d.path] = d.signedUrl; });
-  imgs.forEach(img => {
-    const u = map[img.getAttribute('data-path')];
-    if (!u) return;
-    img.src = u; img.style.display = 'block';
-    img.onclick = () => openImageViewer(u);
-  });
-}
-
-/* ---- list actions (event delegation) ---- */
-$('exp-list').onclick = async (e) => {
-  const bt = e.target.closest('[data-exp-act]');
-  if (bt) {
-    const id = bt.getAttribute('data-id'), act = bt.getAttribute('data-exp-act');
-    const x = expS.bills.find(b => b.id === id); if (!x) return;
-    if (act === 'share') { expShare(expShareText(x)); return; }          // synchronous: mobile popup rules
-    if (act === 'approve') return expReview(id, 'approved');
-    if (act === 'query') return expReview(id, 'queried');
-    if (act === 'reject') return expReview(id, 'rejected');
-    if (act === 'resubmit') return expResubmit(x);
-  }
-  const ab = e.target.closest('[data-adv-act]');
-  if (ab) {
-    const a = expS.advances.find(z => z.id === ab.getAttribute('data-id')); if (!a) return;
-    if (ab.getAttribute('data-adv-act') === 'bill') return openBillSheet(a);
-    if (ab.getAttribute('data-adv-act') === 'close') return expCloseAdvance(a);
-  }
-};
-
-async function expReview(id, status){
-  let note = null;
-  if (status !== 'approved') {
-    note = prompt(status === 'queried' ? 'What should the staff correct or explain?' : 'Reason for rejecting this bill');
-    if (!note || !note.trim()) return;
-    note = note.trim();
-  }
-  const { error } = await sb.from('ea_exp_bills').update({ status, review_note: note }).eq('id', id);
-  if (error) { alert(error.message); return; }
-  await renderExpenses(expS.convId);
-}
-async function expResubmit(x){
-  const reply = prompt('Add a note for the approver (optional)');
-  if (reply === null) return;
-  const description = reply.trim() ? `${x.description} | Reply: ${reply.trim()}` : x.description;
-  const { error } = await sb.from('ea_exp_bills').update({ status:'posted', description }).eq('id', x.id);
-  if (error) { alert(error.message); return; }
-  await renderExpenses(expS.convId);
-}
-async function expCloseAdvance(a){
-  const linked = expS.bills.filter(b => b.advance_id === a.id && b.status !== 'rejected').reduce((s,b) => s + Number(b.amount), 0);
-  const out = Math.max(0, Number(a.amount) - linked);
-  const r = prompt(`Cash refunded by the shop (₹). Balance with shop after bills: ${inr(out)}. Enter 0 if fully adjusted by bills.`, String(out));
-  if (r === null) return;
-  const refund = parseFloat(r);
-  if (isNaN(refund) || refund < 0 || refund > Number(a.amount)) { alert('Enter a valid refund amount'); return; }
-  const left = out - refund;
-  if (left > 0.5 && !confirm(`${inr(left)} will remain unaccounted with this shop. Close anyway?`)) return;
-  const note = prompt('Closing note (optional)') || null;
-  const { error } = await sb.from('ea_exp_advances').update({ status:'closed', refunded_amount: refund, close_note: note }).eq('id', a.id);
-  if (error) { alert(error.message); return; }
-  await renderExpenses(expS.convId);
-}
-
-/* ---- vendor picker (shared by bill + advance sheets) ---- */
-function vpRender(p){
-  const sel = vpState[p];
-  const chosen = $(p+'-vendor-chosen'), search = $(p+'-vendor-search'), res = $(p+'-vendor-results');
-  chosen.style.display = sel ? 'flex' : 'none';
-  search.style.display = sel ? 'none' : 'block';
-  if (sel) {
-    chosen.innerHTML = `<span>${esc(sel.name)}${sel.id ? '' : ' <span style="font-weight:400;color:var(--text-muted);">(new shop)</span>'}</span><span class="chg" data-vp-clear="${p}">Change</span>`;
-    res.innerHTML = '';
-    return;
-  }
-  const mgr = expCanManage();
-  const q = search.value.trim(), ql = q.toLowerCase();
-  const matches = expS.vendors.filter(v => !ql || v.name.toLowerCase().includes(ql)).slice(0, 6);
-  const exact = expS.vendors.some(v => v.name.trim().toLowerCase() === ql);
-  res.innerHTML = matches.map(v => `<div class="chip" data-vp-pick="${v.id}"><span style="flex:1;">${esc(v.name)}${v.area?' · '+esc(v.area):''}</span>${mgr ? `<span data-vp-star="${v.id}" style="font-size:18px;color:var(--accent);padding:0 4px;">${v.is_regular?'★':'☆'}</span>` : (v.is_regular ? '<span style="color:var(--accent);">★</span>' : '')}</div>`).join('')
-    + (q.length >= 2 && !exact ? `<div class="chip" data-vp-new="1" style="border-style:dashed;">+ Add “${esc(q)}” as a new shop</div>` : '');
-}
-function wireVendorPicker(p){
-  $(p+'-vendor-search').oninput = () => vpRender(p);
-  $(p+'-vendor-chosen').onclick = (e) => { if (e.target.closest('[data-vp-clear]')) { vpState[p] = null; $(p+'-vendor-search').value = ''; vpRender(p); } };
-  $(p+'-vendor-results').onclick = async (e) => {
-    const star = e.target.closest('[data-vp-star]');
-    if (star) {
-      e.stopPropagation();
-      const v = expS.vendors.find(z => z.id === star.getAttribute('data-vp-star')); if (!v) return;
-      const { error } = await sb.from('ea_exp_vendors').update({ is_regular: !v.is_regular }).eq('id', v.id);
-      if (error) { alert(error.message); return; }
-      v.is_regular = !v.is_regular; vpRender(p); return;
-    }
-    const pick = e.target.closest('[data-vp-pick]');
-    if (pick) { const v = expS.vendors.find(z => z.id === pick.getAttribute('data-vp-pick')); if (v) { vpState[p] = { id: v.id, name: v.name }; vpRender(p); } return; }
-    if (e.target.closest('[data-vp-new]')) { vpState[p] = { id: null, name: $(p+'-vendor-search').value.trim() }; vpRender(p); }
-  };
-}
-wireVendorPicker('exp'); wireVendorPicker('adv');
-
-async function expEnsureVendor(sel, category){
-  if (sel.id) return sel;
-  const ins = await sb.from('ea_exp_vendors').insert({ name: sel.name, category, created_by: me.id }).select('*').single();
-  if (!ins.error) { expS.vendors.push(ins.data); return { id: ins.data.id, name: ins.data.name }; }
-  if (ins.error.code === '23505') {
-    const ex = await sb.from('ea_exp_vendors').select('*').ilike('name', sel.name.replace(/[%_\\]/g, '\\$&')).eq('active', true).limit(1);
-    if (ex.data && ex.data[0]) return { id: ex.data[0].id, name: ex.data[0].name };
-  }
-  throw ins.error;
-}
-
-/* ---- photo helpers ---- */
-async function compressBill(file){
-  try {
-    if (!file.type || !file.type.startsWith('image/')) return file;
-    const bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
-    const k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
-    const c = document.createElement('canvas');
-    c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
-    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
-    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.8));
-    if (blob && blob.size < file.size) return blob;
-  } catch (e) { /* use original */ }
-  return file;
-}
-async function uploadBillPhoto(file, convId){
-  const body = await compressBill(file);
-  const isJpg = body !== file;
-  const ext = isJpg ? 'jpg' : ((file.name.split('.').pop() || 'jpg').toLowerCase());
-  const path = `${convId}/${crypto.randomUUID()}.${ext}`;
-  const { error } = await sb.storage.from('eagles-bills').upload(path, body, { upsert:false, contentType: isJpg ? 'image/jpeg' : (file.type || undefined) });
-  if (error) throw error;
-  return path;
-}
-
-/* ---- post bill sheet ---- */
-async function expLoadWbs(convId){
-  if (expS.wbsFor === convId) return;
-  const { data } = await sb.from('ea_wbs_items').select('id, code, name').eq('conversation_id', convId).order('order_index').order('created_at');
-  expS.wbsFor = convId;
-  $('exp-wbs').innerHTML = '<option value="">— Not linked —</option>' + (data||[]).map(w => `<option value="${w.id}">${esc((w.code ? w.code + ' · ' : '') + w.name)}</option>`).join('');
-}
-function openBillSheet(advance){
-  expPhoto = null; expCat = null; expGeo = null; expLinkAdvance = advance || null;
-  $('exp-photo-preview').style.display = 'none'; $('exp-photo-input').value = ''; $('exp-photo-label').textContent = 'Take photo of the bill';
-  ['exp-desc','exp-amount','exp-billno','exp-gst-amt'].forEach(id => $(id).value = '');
-  $('exp-date').value = localISO(); $('exp-date').max = localISO();
-  $('exp-has-gst').checked = false; $('exp-gst-wrap').style.display = 'none'; $('exp-emergency').checked = false;
-  $('exp-wbs').value = '';
-  $('exp-cat-chips').innerHTML = EXP_CATS.map(([k,l]) => `<div class="chip" data-cat="${k}">${l}</div>`).join('');
-  $('exp-cat-chips').querySelectorAll('.chip').forEach(c => { c.onclick = () => expPickCat(c.getAttribute('data-cat')); });
-  vpState.exp = null; $('exp-vendor-search').value = '';
-  const banner = $('exp-adv-banner');
-  if (advance) {
-    vpState.exp = { id: advance.vendor_id, name: advance.vendor?.name || '' };
-    expPickCat('tool_rental');
-    banner.style.display = 'block';
-    banner.textContent = `Adjusting against advance of ${inr(advance.amount)} to ${advance.vendor?.name || 'shop'} (${advance.advance_date}). No cash is taken from your float for this bill.`;
-  } else banner.style.display = 'none';
-  vpRender('exp');
-  expLoadWbs(expS.convId);
-  if (navigator.geolocation) navigator.geolocation.getCurrentPosition(
-    p => { expGeo = { lat: +p.coords.latitude.toFixed(6), lng: +p.coords.longitude.toFixed(6) }; }, () => {}, { timeout: 4000, maximumAge: 60000 });
-  toggleSheet('exp-bill-sheet', true);
-}
-function expPickCat(k){
-  expCat = k;
-  $('exp-cat-chips').querySelectorAll('.chip').forEach(c => c.classList.toggle('selected', c.getAttribute('data-cat') === k));
-}
-$('btn-add-expense').onclick = () => openBillSheet(null);
-$('btn-exp-photo').onclick = () => $('exp-photo-input').click();
-$('exp-photo-input').onchange = (e) => {
-  const f = e.target.files[0]; if (!f) return;
-  expPhoto = f; $('exp-photo-img').src = URL.createObjectURL(f);
-  $('exp-photo-preview').style.display = 'block'; $('exp-photo-label').textContent = 'Retake photo';
-};
-$('exp-has-gst').onchange = () => { $('exp-gst-wrap').style.display = $('exp-has-gst').checked ? 'block' : 'none'; };
-
-$('btn-save-expense').onclick = async () => {
-  if (expSaving) return;
-  const amount = parseFloat($('exp-amount').value);
-  const desc = $('exp-desc').value.trim();
-  const date = $('exp-date').value || localISO();
-  const vend = vpState.exp;
-  if (!expPhoto) { alert('Take a photo of the bill first'); return; }
-  if (!vend) { alert('Pick the shop, or add it as a new shop'); return; }
-  if (!expCat) { alert('Pick a category'); return; }
-  if (desc.length < 2) { alert('Write what was bought'); return; }
-  if (!(amount > 0)) { alert('Enter the bill amount'); return; }
-  if (date > localISO()) { alert('Bill date cannot be in the future'); return; }
-  const dup = vend.id && expS.bills.find(x => x.status !== 'rejected' && x.vendor_id === vend.id && Number(x.amount) === amount && x.bill_date === date);
-  if (dup && !confirm(`A bill of ${inr(amount)} from ${vend.name} on ${date} is already posted. Post another?`)) return;
-  const gstAmt = parseFloat($('exp-gst-amt').value);
-  expSaving = true; $('btn-save-expense').style.opacity = '0.5';
-  try {
-    const vendor = await expEnsureVendor(vend, expCat);
-    const path = await uploadBillPhoto(expPhoto, expS.convId);
-    const row = {
-      conversation_id: expS.convId, spent_by: me.id, bill_date: date, vendor_id: vendor.id, vendor_name: vendor.name,
-      category: expCat, description: desc, amount, bill_no: $('exp-billno').value.trim() || null,
-      has_gst: $('exp-has-gst').checked, gst_amount: ($('exp-has-gst').checked && gstAmt >= 0) ? gstAmt : null,
-      emergency_purchase: $('exp-emergency').checked, advance_id: expLinkAdvance ? expLinkAdvance.id : null,
-      wbs_item_id: $('exp-wbs').value || null, photo_path: path, lat: expGeo?.lat ?? null, lng: expGeo?.lng ?? null
-    };
-    const { data, error } = await sb.from('ea_exp_bills').insert(row).select('id').single();
-    if (error) {
-      if (error.code === '23505') throw new Error('This bill number is already recorded for this shop. Check it is not a duplicate.');
-      throw error;
-    }
-    sb.from('ea_messages').insert({ conversation_id: expS.convId, sender_id: me.id, msg_type:'system',
-      content: `${me.name} posted a bill: ${vendor.name} ${inr(amount)} (${EXP_CAT_LABEL[expCat]}) — awaiting approval` }).then(() => {});
-    expLastShare = expShareText({ ...row, id: data.id, status:'posted', spender:{ name: me.name } });
-    $('exp-done-summary').textContent = `${vendor.name}\n${inr(amount)} · ${EXP_CAT_LABEL[expCat]}\nRef ${data.id.slice(0,8).toUpperCase()} — waiting for approval`;
-    toggleSheet('exp-bill-sheet', false);
-    await renderExpenses(expS.convId);
-    toggleSheet('exp-done-sheet', true);
-  } catch (e) { alert('Could not post bill: ' + (e.message || e)); }
-  finally { expSaving = false; $('btn-save-expense').style.opacity = '1'; }
-};
-$('btn-exp-share').onclick = () => { if (expLastShare) expShare(expLastShare); };
-
-/* ---- advance sheet ---- */
-$('btn-add-advance').onclick = () => {
-  advPhoto = null; vpState.adv = null; $('adv-vendor-search').value = '';
-  $('adv-photo-preview').style.display = 'none'; $('adv-photo-input').value = ''; $('adv-photo-label').textContent = 'Take photo of receipt / slip';
-  $('adv-amount').value = ''; $('adv-purpose').value = ''; $('adv-date').value = localISO(); $('adv-date').max = localISO();
-  vpRender('adv'); toggleSheet('exp-adv-sheet', true);
-};
-$('btn-adv-photo').onclick = () => $('adv-photo-input').click();
-$('adv-photo-input').onchange = (e) => {
-  const f = e.target.files[0]; if (!f) return;
-  advPhoto = f; $('adv-photo-img').src = URL.createObjectURL(f);
-  $('adv-photo-preview').style.display = 'block'; $('adv-photo-label').textContent = 'Retake photo';
-};
-$('btn-save-advance').onclick = async () => {
-  if (expSaving) return;
-  const amount = parseFloat($('adv-amount').value), purpose = $('adv-purpose').value.trim(), date = $('adv-date').value || localISO();
-  if (!advPhoto) { alert('Take a photo of the receipt or slip first'); return; }
-  if (!vpState.adv) { alert('Pick the shop, or add it as a new shop'); return; }
-  if (!(amount > 0)) { alert('Enter the advance amount'); return; }
-  if (purpose.length < 2) { alert('Write the purpose'); return; }
-  if (date > localISO()) { alert('Date cannot be in the future'); return; }
-  expSaving = true; $('btn-save-advance').style.opacity = '0.5';
-  try {
-    const vendor = await expEnsureVendor(vpState.adv, 'tool_rental');
-    const path = await uploadBillPhoto(advPhoto, expS.convId);
-    const { error } = await sb.from('ea_exp_advances').insert({ conversation_id: expS.convId, vendor_id: vendor.id, given_by: me.id, advance_date: date, amount, purpose, photo_path: path });
-    if (error) throw error;
-    sb.from('ea_messages').insert({ conversation_id: expS.convId, sender_id: me.id, msg_type:'system',
-      content: `${me.name} paid an advance of ${inr(amount)} to ${vendor.name} — ${purpose}` }).then(() => {});
-    toggleSheet('exp-adv-sheet', false);
-    expS.filter = 'advances';
-    await renderExpenses(expS.convId);
-  } catch (e) { alert('Could not save advance: ' + (e.message || e)); }
-  finally { expSaving = false; $('btn-save-advance').style.opacity = '1'; }
-};
-
-/* ---- give / take back cash (managers) ---- */
-function openFloatSheet(holderId){
-  expFloatHolder = holderId; expFloatKind = 'topup';
-  const mm = expS.members.find(m => m.user_id === holderId);
-  $('exp-float-title').textContent = 'Cash — ' + (mm?.ea_users?.name || '');
-  $('exp-float-amount').value = ''; $('exp-float-note').value = '';
-  $('exp-float-kind').querySelectorAll('.chip').forEach(c => c.classList.toggle('selected', c.getAttribute('data-kind') === 'topup'));
-  toggleSheet('exp-float-sheet', true);
-}
-$('exp-float-kind').querySelectorAll('.chip').forEach(c => {
-  c.onclick = () => { expFloatKind = c.getAttribute('data-kind'); $('exp-float-kind').querySelectorAll('.chip').forEach(z => z.classList.toggle('selected', z === c)); };
-});
-$('btn-save-float').onclick = async () => {
-  if (expSaving) return;
-  const amount = parseFloat($('exp-float-amount').value);
-  if (!(amount > 0)) { alert('Enter the amount'); return; }
-  const { bal } = expBalanceOf(expFloatHolder);
-  const cap = Number(expS.settings.float_cap);
-  const nm = expS.members.find(m => m.user_id === expFloatHolder)?.ea_users?.name || 'this person';
-  if (expFloatKind === 'topup' && bal + amount > cap && !confirm(`This takes ${nm}'s cash in hand to ${inr(bal + amount)}, above the limit of ${inr(cap)}. Continue?`)) return;
-  if (expFloatKind === 'return' && amount > bal && !confirm(`${nm} is recorded as holding only ${inr(Math.max(bal,0))}. Record ${inr(amount)} as taken back anyway?`)) return;
-  expSaving = true;
-  try {
-    const { error } = await sb.from('ea_exp_float_txns').insert({ conversation_id: expS.convId, holder_id: expFloatHolder, kind: expFloatKind, amount, note: $('exp-float-note').value.trim() || null, created_by: me.id });
-    if (error) throw error;
-    toggleSheet('exp-float-sheet', false);
-    await renderExpenses(expS.convId);
-  } catch (e) { alert('Could not save: ' + (e.message || e)); }
-  finally { expSaving = false; }
-};
-
-/* ---- limits (managers) ---- */
-function openLimitsSheet(){
-  $('lim-float').value = expS.settings.float_cap; $('lim-bill').value = expS.settings.bill_limit; $('lim-days').value = expS.settings.advance_alert_days;
-  toggleSheet('exp-limits-sheet', true);
-}
-$('btn-save-limits').onclick = async () => {
-  const f = parseFloat($('lim-float').value), b = parseFloat($('lim-bill').value), d = parseInt($('lim-days').value, 10);
-  if (isNaN(f) || f < 0 || isNaN(b) || b < 0 || isNaN(d) || d < 1) { alert('Enter valid limits'); return; }
-  const { error } = await sb.from('ea_exp_settings').upsert({ conversation_id: expS.convId, float_cap: f, bill_limit: b, advance_alert_days: d, updated_by: me.id, updated_at: new Date().toISOString() }, { onConflict: 'conversation_id' });
-  if (error) { alert(error.message); return; }
-  toggleSheet('exp-limits-sheet', false);
-  await renderExpenses(expS.convId);
-};
-
 let hindranceActiveFilter = 'open';
 let hindranceSelectedCategory = null;
 let hindrancePendingPhoto = null;
